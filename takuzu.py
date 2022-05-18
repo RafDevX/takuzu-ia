@@ -7,7 +7,7 @@
 # 00000 Nome2
 
 from sys import stdin
-from typing import List
+from typing import List, Tuple
 from search import (
     Problem,
     Node,
@@ -36,30 +36,31 @@ class TakuzuState:
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
     matrix: List[List[int]]
+    size: int
 
-    def __init__(self, matrix: List[List[int]]):
+    def __init__(self, size: int, matrix: List[List[int]]):
         """Construtor.
         Recebe uma matriz de inteiros representando o tabuleiro.
         """
+        self.size = size
         self.matrix = matrix
 
 
-    def get_number(self, row: int, col: int) -> int:
+    def get_number(self, row: int, col: int) -> int | None:
         """Devolve o valor na respetiva posição do tabuleiro."""
-        # TODO
-        pass
+        if (row < 0 or row >= self.size or col < 0 or col >= self.size):
+            return None
+        return self.matrix[row][col]
 
-    def adjacent_vertical_numbers(self, row: int, col: int) -> (int, int):
+    def adjacent_vertical_numbers(self, row: int, col: int) -> Tuple[int | None, int | None]:
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
-        # TODO
-        pass
+        return (self.get_number(row - 1, col), self.get_number(row + 1, col))
 
-    def adjacent_horizontal_numbers(self, row: int, col: int) -> (int, int):
+    def adjacent_horizontal_numbers(self, row: int, col: int) -> Tuple[int | None, int | None]:
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
-        # TODO
-        pass
+        return (self.get_number(row, col - 1), self.get_number(row, col + 1))
 
     @staticmethod
     def parse_instance_from_stdin():
@@ -74,7 +75,7 @@ class Board:
         """
         size = int(stdin.readline())
         matrix = [[int(entry) for entry in stdin.readline().split('\t')] for _ in range(size)]
-        return Board(matrix)
+        return Board(size, matrix)
 
     # TODO: outros metodos da classe
 
