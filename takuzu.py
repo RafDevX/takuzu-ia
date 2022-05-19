@@ -6,6 +6,7 @@
 # 00000 Nome1
 # 00000 Nome2
 
+from copy import deepcopy
 from sys import stdin
 from typing import List, Tuple
 from search import (
@@ -29,6 +30,9 @@ class TakuzuState:
 
     def __lt__(self, other):
         return self.id < other.id
+
+    def place(self, row: int, col: int, value: int):
+        return TakuzuState(self.board.place(row, col, value))
 
     # TODO: outros metodos da classe
 
@@ -61,6 +65,12 @@ class Board:
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
         return (self.get_number(row, col - 1), self.get_number(row, col + 1))
+    
+    def place(self, row: int, col: int, value: int):
+        """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
+        new_matrix = deepcopy(self.matrix)
+        new_matrix[row][col] = value
+        return Board(self.size, new_matrix)
 
     @staticmethod
     def parse_instance_from_stdin():
@@ -74,7 +84,10 @@ class Board:
             > stdin.readline()
         """
         size = int(stdin.readline())
-        matrix = [[int(entry) for entry in stdin.readline().split('\t')] for _ in range(size)]
+        matrix = [
+            [int(entry) for entry in stdin.readline().split('\t')]
+            for _ in range(size)
+        ]
         return Board(size, matrix)
 
     # TODO: outros metodos da classe
@@ -92,13 +105,13 @@ class Takuzu(Problem):
         # TODO
         pass
 
-    def result(self, state: TakuzuState, action):
+    def result(self, state: TakuzuState, action: Tuple[int, int, int]):
         """Retorna o estado resultante de executar a 'action' sobre
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-        # TODO
-        pass
+        (row, col, val) = action
+        return state.place(row, col, val)
 
     def goal_test(self, state: TakuzuState):
         """Retorna True se e só se o estado passado como argumento é
