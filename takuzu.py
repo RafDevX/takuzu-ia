@@ -49,6 +49,16 @@ class Board:
         self.size = size
         self.matrix = matrix
 
+    def __str__(self):
+        """Imprime o tabuleiro."""
+        string = ""
+        for row in self.matrix:
+            string += "\t".join(str(x) for x in row) + "\n"
+        return string
+
+    def __repr__(self) -> str:
+        """Representação interna do tabuleiro."""
+        return f"Board({self.size}, {self.matrix})"
 
     def get_number(self, row: int, col: int) -> int | None:
         """Devolve o valor na respetiva posição do tabuleiro."""
