@@ -75,7 +75,71 @@ class Board:
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
         return (self.get_number(row, col - 1), self.get_number(row, col + 1))
-    
+
+    def get_column(self, col: int) -> List[int]:
+        """Devolve a coluna indicada."""
+        return [row[col] for row in self.matrix]
+
+    def get_row(self, row: int) -> List[int]:
+        """Devolve a linha indicada."""
+        return self.matrix[row]
+
+    def count_1s_col(self, col: int) -> int:
+        """Devolve o número de 1s na coluna indicada."""
+        return sum(self.get_column(col).count(1))
+
+    def count_1s_row(self, row: int) -> int:
+        """Devolve o número de 1s na linha indicada."""
+        return sum(self.get_row(row).count(1))
+
+    def count_0s_col(self, col: int) -> int:
+        """Devolve o número de 1s na coluna indicada."""
+        return sum(self.get_column(col).count(0))
+
+    def count_0s_row(self, row: int) -> int:
+        """Devolve o número de 1s na linha indicada."""
+        return sum(self.get_row(row).count(0))
+
+    def check_valid_row(self, row: int) -> bool:
+        """Devolve True se a linha indicada for válida."""
+        for n in range(self.size):
+            number = self.get_number(row, n)
+            if number == None:
+                return False
+            (left, right) = self.adjacent_horizontal_numbers(row, n)
+            if number == right:
+                left, right = self.adjacent_horizontal_numbers(row, n + 1)
+                if right == number:
+                    return False
+        return True
+
+    def check_valid_col(self, col: int) -> bool:
+        """Devolve True se a coluna indicada for válida."""
+        for n in range(self.size):
+            number = self.get_number(n, col)
+            if number == None:
+                return False
+            (up, down) = self.adjacent_horizontal_numbers(n, col)
+            if number == down:
+                up, down = self.adjacent_horizontal_numbers(n + 1)
+                if down == number:
+                    return False
+        return True
+
+    def check_repeated_rows(self) -> bool:
+        """Devolve True se o tabuleiro não tiver linhas repetidas."""
+        for n in range(self.size):
+            if self.matrix.count(self.get_row(n)) > 1:
+                return False
+        return True
+
+    def check_repeated_cols(self) -> bool:
+        """Devolve True se o tabuleiro não tiver colunas repetidas."""
+        for n in range(self.size):
+            if self.matrix.count(self.get_column(n)) > 1:
+                return False
+        return True
+
     def place(self, row: int, col: int, value: int):
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
         new_matrix = deepcopy(self.matrix)
@@ -100,14 +164,13 @@ class Board:
         ]
         return Board(size, matrix)
 
-    # TODO: outros metodos da classe
-
 
 class Takuzu(Problem):
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
-        # TODO
-        pass
+        initial_state = Takuzu(board)
+        super().__init__(initial_state)
+        return
 
     def actions(self, state: TakuzuState):
         """Retorna uma lista de ações que podem ser executadas a
@@ -127,8 +190,26 @@ class Takuzu(Problem):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas com uma sequência de números adjacentes."""
-        # TODO
-        pass
+        board = state.board
+        size = board.size
+        # verificar se o tamanho é ímpar
+        isOdd = 0
+        if (size % 2) != 0:
+            isOdd = 1
+        # Verificar se existe o mesmo número de 0s e 1s em todas as linhas e colunas
+        for n in range(size):
+            if abs(board.count_0s_row(n) - board.count_1s_row(n)) > isOdd or \
+               abs(board.count_0s_col(n) - board.count_1s_col(n)) > isOdd:
+                return False
+        # Verificar se há números iguais adjacentes
+        for row in range(size):
+            if (board.check_valid_row(row)) == False:
+                return False
+        for col in range(size):
+            if board.check_valid_col(col) == False:
+                return False
+        # Verificar se todas as linas e colunas são diferentes
+        return board.check_repeated_rows() and board.check_repeated_cols()
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
