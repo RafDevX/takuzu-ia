@@ -22,6 +22,7 @@ from search import (
 
 class TakuzuState:
     state_id = 0
+    place_counter = 0
 
     def __init__(self, board):
         self.board = board
@@ -32,6 +33,7 @@ class TakuzuState:
         return self.id < other.id
 
     def place(self, row: int, col: int, value: int):
+        place_counter += 1
         return TakuzuState(self.board.place(row, col, value))
 
     # TODO: outros metodos da classe
@@ -39,6 +41,7 @@ class TakuzuState:
 
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
+
     matrix: List[List[int]]
     size: int
 
@@ -60,18 +63,18 @@ class Board:
         """Representação interna do tabuleiro."""
         return f"Board({self.size}, {self.matrix})"
 
-    def get_number(self, row: int, col: int) -> int | None:
+    def get_number(self, row: int, col: int) -> int or None:
         """Devolve o valor na respetiva posição do tabuleiro."""
-        if (row < 0 or row >= self.size or col < 0 or col >= self.size):
+        if row < 0 or row >= self.size or col < 0 or col >= self.size:
             return None
         return self.matrix[row][col]
 
-    def adjacent_vertical_numbers(self, row: int, col: int) -> Tuple[int | None, int | None]:
+    def adjacent_vertical_numbers(self, row: int, col: int) -> Tuple[int or None, int or None]:
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
         return (self.get_number(row - 1, col), self.get_number(row + 1, col))
 
-    def adjacent_horizontal_numbers(self, row: int, col: int) -> Tuple[int | None, int | None]:
+    def adjacent_horizontal_numbers(self, row: int, col: int) -> Tuple[int or None, int or None]:
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
         return (self.get_number(row, col - 1), self.get_number(row, col + 1))
@@ -158,10 +161,7 @@ class Board:
             > stdin.readline()
         """
         size = int(stdin.readline())
-        matrix = [
-            [int(entry) for entry in stdin.readline().split('\t')]
-            for _ in range(size)
-        ]
+        matrix = [[int(entry) for entry in stdin.readline().split("\t")] for _ in range(size)]
         return Board(size, matrix)
 
 
@@ -191,22 +191,24 @@ class Takuzu(Problem):
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas com uma sequência de números adjacentes."""
         board = state.board
-        size = board.size
+        size = board.size()
+
+        if state.place_counter != size * size:
+            return False
         # verificar se o tamanho é ímpar
         isOdd = 0
         if (size % 2) != 0:
             isOdd = 1
         # Verificar se existe o mesmo número de 0s e 1s em todas as linhas e colunas
         for n in range(size):
-            if abs(board.count_0s_row(n) - board.count_1s_row(n)) > isOdd or \
-               abs(board.count_0s_col(n) - board.count_1s_col(n)) > isOdd:
+            if (
+                abs(board.count_0s_row(n) - board.count_1s_row(n)) > isOdd
+                or abs(board.count_0s_col(n) - board.count_1s_col(n)) > isOdd
+            ):
                 return False
         # Verificar se há números iguais adjacentes
-        for row in range(size):
-            if (board.check_valid_row(row)) == False:
-                return False
-        for col in range(size):
-            if board.check_valid_col(col) == False:
+        for n in range(size):
+            if not (board.check_valid_row(n)) or not (board.check_valid_col(n)):
                 return False
         # Verificar se todas as linas e colunas são diferentes
         return board.check_repeated_rows() and board.check_repeated_cols()
