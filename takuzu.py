@@ -89,19 +89,19 @@ class Board:
 
     def count_1s_col(self, col: int) -> int:
         """Devolve o número de 1s na coluna indicada."""
-        return sum(self.get_column(col).count(1))
+        return self.get_column(col).count(1)
 
     def count_1s_row(self, row: int) -> int:
         """Devolve o número de 1s na linha indicada."""
-        return sum(self.get_row(row).count(1))
+        return self.get_row(row).count(1)
 
     def count_0s_col(self, col: int) -> int:
-        """Devolve o número de 1s na coluna indicada."""
-        return sum(self.get_column(col).count(0))
+        """Devolve o número de 0s na coluna indicada."""
+        return self.get_column(col).count(0)
 
     def count_0s_row(self, row: int) -> int:
-        """Devolve o número de 1s na linha indicada."""
-        return sum(self.get_row(row).count(0))
+        """Devolve o número de 0s na linha indicada."""
+        return self.get_row(row).count(0)
 
     def check_valid_row(self, row: int) -> bool:
         """Devolve True se a linha indicada for válida."""
@@ -168,9 +168,8 @@ class Board:
 class Takuzu(Problem):
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
-        initial_state = Takuzu(board)
+        initial_state = TakuzuState(board)
         super().__init__(initial_state)
-        return
 
     def actions(self, state: TakuzuState):
         """Retorna uma lista de ações que podem ser executadas a
@@ -196,9 +195,7 @@ class Takuzu(Problem):
         if state.place_counter != size * size:
             return False
         # verificar se o tamanho é ímpar
-        isOdd = 0
-        if (size % 2) != 0:
-            isOdd = 1
+        isOdd = size % 2
         # Verificar se existe o mesmo número de 0s e 1s em todas as linhas e colunas
         for n in range(size):
             if (
