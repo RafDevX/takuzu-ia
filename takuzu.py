@@ -20,8 +20,6 @@ from search import (
 )
 
 
-
-
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
 
@@ -72,12 +70,12 @@ class Board:
 
         return (self.get_number(row, col - 1), self.get_number(row, col + 1))
 
-    def get_column(self, col: int) -> List[int]:
+    def get_column(self, col: int) -> Tuple[int]:
         """Devolve a coluna indicada."""
 
-        return [row[col] for row in self.matrix]
+        return (row[col] for row in self.matrix)
 
-    def get_row(self, row: int) -> List[int]:
+    def get_row(self, row: int) -> Tuple[int]:
         """Devolve a linha indicada."""
 
         return self.matrix[row]
@@ -102,6 +100,7 @@ class Board:
 
         return self.get_row(row).count(0)
 
+    # Não estamos a usar esta função, mas pode ser útil para implementar outras funções.
     def check_valid_row(self, row: int) -> bool:
         """Devolve True se a linha indicada for válida."""
 
@@ -116,6 +115,7 @@ class Board:
                     return False
         return True
 
+    # Não estamos a usar esta função, mas pode ser útil para implementar outras funções.
     def check_valid_col(self, col: int) -> bool:
         """Devolve True se a coluna indicada for válida."""
 
@@ -159,7 +159,7 @@ class Board:
 
             for (adj_fn, abs_delta) in (
                 (self.adjacent_vertical_numbers, (1, 0)),
-                (self.adjacent_horizontal_numbers, (0, 1))
+                (self.adjacent_horizontal_numbers, (0, 1)),
             ):
                 (before, after) = adj_fn(row, col)
                 if x == before == after:
@@ -173,20 +173,18 @@ class Board:
                     if adj_fn(row + abs_delta[0], col + abs_delta[1])[1] == x:
                         ok = False
                         break
-            
+
             if ok:
                 possible_values.append(x)
-        
+
         return possible_values
 
     def place(self, row: int, col: int, value: int):
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
 
-        new_matrix = [
-            [self.matrix[i][j] for j in range(len(self.matrix[i]))]
-            for i in range(self.size)
-        ]
-        new_matrix[row][col] = value
+        copy_matrix = [[self.matrix[i][j] for j in range(len(self.matrix[i]))] for i in range(self.size)]
+        copy_matrix[row][col] = value
+        new_matrix = tuple(tuple(row) for row in copy_matrix)
         return Board(new_matrix, self.size, self.free_squares - 1)
 
     def filled(self):
@@ -213,9 +211,10 @@ class Board:
                 row.append(int(entry))
                 if int(entry) != 2:
                     free_squares -= 1
-            matrix.append(row)
-
+            matrix.append(tuple(row))
+        matrix = tuple(matrix)
         return Board(matrix, size, free_squares)
+
 
 class TakuzuState:
     state_id = 0
@@ -283,7 +282,7 @@ class Takuzu(Problem):
 
         # NOTA: Não se verifica a restrição de números adjacentes pois esta é
         # verificada noutro sítio.
-        
+
         maxAllowedDiff = board.size % 2
         # Verificar se existe o mesmo número de 0s e 1s em todas as linhas e colunas
         for n in range(board.size):
