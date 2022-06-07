@@ -73,78 +73,38 @@ class Board:
     def get_column(self, col: int) -> Tuple[int]:
         """Devolve a coluna indicada."""
 
-        return (row[col] for row in self.matrix)
+        return tuple(row[col] for row in self.matrix)
 
     def get_row(self, row: int) -> Tuple[int]:
         """Devolve a linha indicada."""
 
         return self.matrix[row]
 
-    def count_1s_col(self, col: int) -> int:
-        """Devolve o número de 1s na coluna indicada."""
+    def count_col(self, col: int, num: int) -> int:
+        """Devolve o número de num na coluna indicada."""
 
-        return self.get_column(col).count(1)
+        return self.get_column(col).count(num)
 
-    def count_1s_row(self, row: int) -> int:
-        """Devolve o número de 1s na linha indicada."""
+    def count_row(self, row: int, num: int) -> int:
+        """Devolve o número de num na linha indicada."""
 
-        return self.get_row(row).count(1)
+        return self.get_row(row).count(num)
 
-    def count_0s_col(self, col: int) -> int:
-        """Devolve o número de 0s na coluna indicada."""
+    def will_be_repeated(self, row: int, col: int, num: int) -> bool:
+        """Devolve True se a matriz ficar com duas colunas iguais se se introduzir o num na posição (num, col)"""
 
-        return self.get_column(col).count(0)
+        (temp_row, temp_col) = list(self.get_row(row)), list(self.get_column(col))
+        temp_row[col] = num
+        temp_col[row] = num
+        return (tuple(temp_row) in self.matrix) or (tuple(temp_col) in self.matrix)
 
-    def count_0s_row(self, row: int) -> int:
-        """Devolve o número de 0s na linha indicada."""
+    def excess_of_num(self, row: int, col: int, num: int) -> bool:
+        """Devolve True se a introdução do num na posição (row, col) impossibilitar que o número de 0s e 1s seja igual."""
 
-        return self.get_row(row).count(0)
-
-    # Não estamos a usar esta função, mas pode ser útil para implementar outras funções.
-    def check_valid_row(self, row: int) -> bool:
-        """Devolve True se a linha indicada for válida."""
-
-        for n in range(self.size):
-            number = self.get_number(row, n)
-            if number == None:
-                return False
-            (left, right) = self.adjacent_horizontal_numbers(row, n)
-            if number == right:
-                left, right = self.adjacent_horizontal_numbers(row, n + 1)
-                if right == number:
-                    return False
-        return True
-
-    # Não estamos a usar esta função, mas pode ser útil para implementar outras funções.
-    def check_valid_col(self, col: int) -> bool:
-        """Devolve True se a coluna indicada for válida."""
-
-        for n in range(self.size):
-            number = self.get_number(n, col)
-            if number == None:
-                return False
-            (up, down) = self.adjacent_vertical_numbers(n, col)
-            if number == down:
-                up, down = self.adjacent_vertical_numbers(n + 1, col)
-                if down == number:
-                    return False
-        return True
-
-    def has_repeated_rows(self) -> bool:
-        """Devolve True se o tabuleiro tiver linhas repetidas."""
-
-        for n in range(self.size):
-            if self.matrix.count(self.get_row(n)) > 1:
-                return True
-        return False
-
-    def has_repeated_cols(self) -> bool:
-        """Devolve True se o tabuleiro tiver colunas repetidas."""
-
-        for n in range(self.size):
-            if self.matrix.count(self.get_column(n)) > 1:
-                return True
-        return False
+        t = (num + 1) % 2
+        return ((self.count_col(col, num) - self.count_col(col, t)) >= self.count_col(col, 2)) or (
+            (self.count_row(row, num) - self.count_row(row, t)) >= self.count_row(row, 2)
+        )
 
     def possible_values_for_square(self, row: int, col: int) -> List[int]:
         """Devolve uma lista com os valores possíveis para a posição indicada."""
@@ -156,6 +116,12 @@ class Board:
 
         for x in (0, 1):
             ok = True
+
+            if self.will_be_repeated(row, col, x):
+                continue
+
+            if self.excess_of_num(row, col, x):
+                continue
 
             for (adj_fn, abs_delta) in (
                 (self.adjacent_vertical_numbers, (1, 0)),
@@ -213,7 +179,7 @@ class Board:
                     free_squares -= 1
             matrix.append(tuple(row))
         matrix = tuple(matrix)
-        return Board(matrix, size, free_squares)
+        return Board(matrix, (()), size, free_squares)
 
 
 class TakuzuState:
@@ -280,20 +246,7 @@ class Takuzu(Problem):
         if not state.board_filled():
             return False
 
-        # NOTA: Não se verifica a restrição de números adjacentes pois esta é
-        # verificada noutro sítio.
-
-        maxAllowedDiff = board.size % 2
-        # Verificar se existe o mesmo número de 0s e 1s em todas as linhas e colunas
-        for n in range(board.size):
-            if (
-                abs(board.count_0s_row(n) - board.count_1s_row(n)) > maxAllowedDiff
-                or abs(board.count_0s_col(n) - board.count_1s_col(n)) > maxAllowedDiff
-            ):
-                return False
-
-        # Verificar se todas as linhas e colunas são diferentes
-        return not (board.has_repeated_rows() or board.has_repeated_cols())
+        return True
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
