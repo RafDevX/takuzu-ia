@@ -6,7 +6,6 @@
 # 00000 Nome1
 # 00000 Nome2
 
-from copy import deepcopy
 from sys import stdin
 from typing import List, Tuple, Union
 from search import (
@@ -28,17 +27,16 @@ class Board:
     size: int
     free_squares: int
 
-    def __init__(self, matrix: Tuple[Tuple[int]], domains: Tuple[Tuple[Tuple[int]]], size: int, free_squares: int):
+    def __init__(self, matrix: Tuple[Tuple[int]], size: int, free_squares: int):
         """Construtor.
         Recebe uma matriz de inteiros representando o tabuleiro.
         """
 
         self.matrix = matrix
-        self.domains = domains
         self.size = size
         self.free_squares = free_squares
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Imprime o tabuleiro."""
 
         string = ""
@@ -147,17 +145,16 @@ class Board:
 
     def place(self, row: int, col: int, value: int):
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
-
         copy_matrix = [[self.matrix[i][j] for j in range(len(self.matrix[i]))] for i in range(self.size)]
         copy_matrix[row][col] = value
         new_matrix = tuple(tuple(row) for row in copy_matrix)
         return Board(new_matrix, self.size, self.free_squares - 1)
 
-    def filled(self):
+    def filled(self) -> bool:
         return self.free_squares == 0
 
     @staticmethod
-    def parse_instance_from_stdin():
+    def parse_instance_from_stdin() -> "Board":
         """Lê o test do standard input (stdin) que é passado como argumento
         e retorna uma instância da classe Board.
 
@@ -179,7 +176,7 @@ class Board:
                     free_squares -= 1
             matrix.append(tuple(row))
         matrix = tuple(matrix)
-        return Board(matrix, (()), size, free_squares)
+        return Board(matrix, size, free_squares)
 
 
 class TakuzuState:
@@ -199,6 +196,12 @@ class TakuzuState:
 
     def board_filled(self):
         return self.board.filled()
+
+    def get_possible_values(self, row: int, col: int) -> List[int]:
+        return self.board.possible_values_for_square(row, col)
+
+    def get_board_number(self, row: int, col: int) -> int:
+        return self.board.get_number(row, col)
 
     # TODO: outros metodos da classe
 
@@ -221,13 +224,13 @@ class Takuzu(Problem):
 
         for row in range(board.size):
             for col in range(board.size):
-                if board.get_number(row, col) == 2:
-                    for value in board.possible_values_for_square(row, col):
+                if state.get_board_number(row, col) == 2:
+                    for value in state.get_possible_values(row, col):
                         actions.append((row, col, value))
 
         return actions
 
-    def result(self, state: TakuzuState, action: Tuple[int, int, int]):
+    def result(self, state: TakuzuState, action: Tuple[int, int, int]) -> TakuzuState:
         """Retorna o estado resultante de executar a 'action' sobre
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
@@ -236,17 +239,12 @@ class Takuzu(Problem):
         (row, col, val) = action
         return state.place(row, col, val)
 
-    def goal_test(self, state: TakuzuState):
+    def goal_test(self, state: TakuzuState) -> bool:
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas com uma sequência de números adjacentes."""
 
-        board = state.board
-
-        if not state.board_filled():
-            return False
-
-        return True
+        return state.board_filled()
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
@@ -263,7 +261,16 @@ if __name__ == "__main__":
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
+
+    # Ler tabuleiro do ficheiro 'i1.txt'(Figura 1):
+    # $ python3 takuzu < i1.txt
     board = Board.parse_instance_from_stdin()
+    # Criar uma instância de Takuzu:
     problem = Takuzu(board)
-    print(problem.actions(problem.initial))
+    # Obter o nó solução usando a procura em profundidade:
+    goal_node = depth_first_tree_search(problem)
+    # Verificar se foi atingida a solução
+    print("Is goal?", problem.goal_test(goal_node.state))
+    print("Solution:\n", goal_node.state.board, sep="")
+
     # TODO:
