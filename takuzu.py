@@ -22,14 +22,14 @@ from search import (
 class Board:
     """Representação interna de um tabuleiro de Takuzu."""
 
-    matrix: Tuple[Tuple[int]]
-    domains: Tuple[Tuple[Tuple[int]]]
+    matrix: Tuple[Tuple[int, ...], ...]
+    domains: Tuple[Tuple[Tuple[int, ...], ...], ...]
     size: int
     free_squares: int
 
     def __init__(
         self,
-        matrix: Tuple[Tuple[int]],
+        matrix: Tuple[Tuple[int, ...], ...],
         size: int,
         free_squares: int,
     ):
@@ -77,12 +77,12 @@ class Board:
 
         return (self.get_number(row, col - 1), self.get_number(row, col + 1))
 
-    def get_column(self, col: int) -> Tuple[int]:
+    def get_column(self, col: int) -> Tuple[int, ...]:
         """Devolve a coluna indicada."""
 
         return tuple(row[col] for row in self.matrix)
 
-    def get_row(self, row: int) -> Tuple[int]:
+    def get_row(self, row: int) -> Tuple[int, ...]:
         """Devolve a linha indicada."""
 
         return self.matrix[row]
@@ -162,7 +162,7 @@ class Board:
         new_matrix = tuple(
             tuple(
                 value if (i == row and j == col) else self.matrix[i][j]
-                for j in range(len(self.matrix[i]))
+                for j in range(self.size)
             )
             for i in range(self.size)
         )
@@ -187,7 +187,7 @@ class Board:
 
         size = int(stdin.readline())
         free_squares = size * size
-        matrix: List[Tuple[int]] = []
+        matrix: List[Tuple[int, ...]] = []
         for _ in range(size):
             row: List[int] = []
             for entry in stdin.readline().split("\t"):
