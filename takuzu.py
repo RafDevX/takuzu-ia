@@ -30,7 +30,6 @@ class Board:
     def __init__(
         self,
         matrix: Tuple[Tuple[int]],
-        domains: Tuple[Tuple[Tuple[int]]],
         size: int,
         free_squares: int,
     ):
@@ -39,11 +38,10 @@ class Board:
         """
 
         self.matrix = matrix
-        self.domains = domains
         self.size = size
         self.free_squares = free_squares
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Imprime o tabuleiro."""
 
         string = ""
@@ -89,71 +87,35 @@ class Board:
 
         return self.matrix[row]
 
-    def count_1s_col(self, col: int) -> int:
-        """Devolve o número de 1s na coluna indicada."""
+    def count_col(self, col: int, num: int) -> int:
+        """Devolve o número de num na coluna indicada."""
 
-        return self.get_column(col).count(1)
+        return self.get_column(col).count(num)
 
-    def count_1s_row(self, row: int) -> int:
-        """Devolve o número de 1s na linha indicada."""
+    def count_row(self, row: int, num: int) -> int:
+        """Devolve o número de num na linha indicada."""
 
-        return self.get_row(row).count(1)
+        return self.get_row(row).count(num)
 
-    def count_0s_col(self, col: int) -> int:
-        """Devolve o número de 0s na coluna indicada."""
+    def will_be_repeated(self, row: int, col: int, num: int) -> bool:
+        """Devolve True se a matriz ficar com duas colunas iguais se se introduzir o num na posição (num, col)"""
 
-        return self.get_column(col).count(0)
+        (temp_row, temp_col) = list(self.get_row(row)), list(self.get_column(col))
+        temp_row[col] = num
+        temp_col[row] = num
+        return (tuple(temp_row) in self.matrix) or (tuple(temp_col) in self.matrix)
 
-    def count_0s_row(self, row: int) -> int:
-        """Devolve o número de 0s na linha indicada."""
+    def excess_of_num(self, row: int, col: int, num: int) -> bool:
+        """Devolve True se a introdução do num na posição (row, col) impossibilitar que o número de 0s e 1s seja igual."""
 
-        return self.get_row(row).count(0)
-
-    # Não estamos a usar esta função, mas pode ser útil para implementar outras funções.
-    def check_valid_row(self, row: int) -> bool:
-        """Devolve True se a linha indicada for válida."""
-
-        for n in range(self.size):
-            number = self.get_number(row, n)
-            if number == None:
-                return False
-            (left, right) = self.adjacent_horizontal_numbers(row, n)
-            if number == right:
-                left, right = self.adjacent_horizontal_numbers(row, n + 1)
-                if right == number:
-                    return False
-        return True
-
-    # Não estamos a usar esta função, mas pode ser útil para implementar outras funções.
-    def check_valid_col(self, col: int) -> bool:
-        """Devolve True se a coluna indicada for válida."""
-
-        for n in range(self.size):
-            number = self.get_number(n, col)
-            if number == None:
-                return False
-            (up, down) = self.adjacent_vertical_numbers(n, col)
-            if number == down:
-                up, down = self.adjacent_vertical_numbers(n + 1, col)
-                if down == number:
-                    return False
-        return True
-
-    def has_repeated_rows(self) -> bool:
-        """Devolve True se o tabuleiro tiver linhas repetidas."""
-
-        for n in range(self.size):
-            if self.matrix.count(self.get_row(n)) > 1:
-                return True
-        return False
-
-    def has_repeated_cols(self) -> bool:
-        """Devolve True se o tabuleiro tiver colunas repetidas."""
-
-        for n in range(self.size):
-            if self.matrix.count(self.get_column(n)) > 1:
-                return True
-        return False
+        t = (num + 1) % 2
+        return (
+            (self.count_col(col, num) - self.count_col(col, t))
+            >= self.count_col(col, 2)
+        ) or (
+            (self.count_row(row, num) - self.count_row(row, t))
+            >= self.count_row(row, 2)
+        )
 
     def possible_values_for_square(self, row: int, col: int) -> List[int]:
         """Devolve uma lista com os valores possíveis para a posição indicada."""
@@ -165,6 +127,12 @@ class Board:
 
         for x in (0, 1):
             ok = True
+
+            if self.will_be_repeated(row, col, x):
+                continue
+
+            if self.excess_of_num(row, col, x):
+                continue
 
             for (adj_fn, abs_delta) in (
                 (self.adjacent_vertical_numbers, (1, 0)),
@@ -200,11 +168,11 @@ class Board:
         )
         return Board(new_matrix, self.size, self.free_squares - 1)
 
-    def filled(self):
+    def filled(self) -> bool:
         return self.free_squares == 0
 
     @staticmethod
-    def parse_instance_from_stdin():
+    def parse_instance_from_stdin() -> "Board":
         """Lê o test do standard input (stdin) que é passado como argumento
         e retorna uma instância da classe Board.
 
@@ -246,6 +214,12 @@ class TakuzuState:
     def board_filled(self):
         return self.board.filled()
 
+    def get_possible_values(self, row: int, col: int) -> List[int]:
+        return self.board.possible_values_for_square(row, col)
+
+    def get_square_number(self, row: int, col: int) -> Union[int, None]:
+        return self.board.get_number(row, col)
+
     # TODO: outros metodos da classe
 
 
@@ -267,13 +241,14 @@ class Takuzu(Problem):
 
         for row in range(board.size):
             for col in range(board.size):
-                if board.get_number(row, col) == 2:
-                    for value in board.possible_values_for_square(row, col):
+                # Só considerar casas vazias
+                if state.get_square_number(row, col) == 2:
+                    for value in state.get_possible_values(row, col):
                         actions.append((row, col, value))
 
         return actions
 
-    def result(self, state: TakuzuState, action: Tuple[int, int, int]):
+    def result(self, state: TakuzuState, action: Tuple[int, int, int]) -> TakuzuState:
         """Retorna o estado resultante de executar a 'action' sobre
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
@@ -282,30 +257,12 @@ class Takuzu(Problem):
         (row, col, val) = action
         return state.place(row, col, val)
 
-    def goal_test(self, state: TakuzuState):
+    def goal_test(self, state: TakuzuState) -> bool:
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
         estão preenchidas com uma sequência de números adjacentes."""
 
-        board = state.board
-
-        if not state.board_filled():
-            return False
-
-        # NOTA: Não se verifica a restrição de números adjacentes pois esta é
-        # verificada noutro sítio.
-
-        maxAllowedDiff = board.size % 2
-        # Verificar se existe o mesmo número de 0s e 1s em todas as linhas e colunas
-        for n in range(board.size):
-            if (
-                abs(board.count_0s_row(n) - board.count_1s_row(n)) > maxAllowedDiff
-                or abs(board.count_0s_col(n) - board.count_1s_col(n)) > maxAllowedDiff
-            ):
-                return False
-
-        # Verificar se todas as linhas e colunas são diferentes
-        return not (board.has_repeated_rows() or board.has_repeated_cols())
+        return state.board_filled()
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
@@ -322,7 +279,19 @@ if __name__ == "__main__":
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
+
+    # Ler tabuleiro do ficheiro 'i1.txt'(Figura 1):
+    # $ python3 takuzu < i1.txt
     board = Board.parse_instance_from_stdin()
+    # Criar uma instância de Takuzu:
     problem = Takuzu(board)
-    print(problem.actions(problem.initial))
+    # Obter o nó solução usando a procura em profundidade:
+    goal_node = depth_first_tree_search(problem)
+    # Verificar se foi atingida a solução
+    if goal_node:
+        print("Is goal?", problem.goal_test(goal_node.state))
+        print("Solution:\n", goal_node.state.board, sep="")
+    else:
+        print("No solution found")
+
     # TODO:
