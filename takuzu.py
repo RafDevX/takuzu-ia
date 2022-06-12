@@ -27,7 +27,12 @@ class Board:
     size: int
     free_squares: int
 
-    def __init__(self, matrix: Tuple[Tuple[int]], size: int, free_squares: int):
+    def __init__(
+        self,
+        matrix: Tuple[Tuple[int]],
+        size: int,
+        free_squares: int,
+    ):
         """Construtor.
         Recebe uma matriz de inteiros representando o tabuleiro.
         """
@@ -56,13 +61,17 @@ class Board:
             return None
         return self.matrix[row][col]
 
-    def adjacent_vertical_numbers(self, row: int, col: int) -> Tuple[Union[int, None], Union[int, None]]:
+    def adjacent_vertical_numbers(
+        self, row: int, col: int
+    ) -> Tuple[Union[int, None], Union[int, None]]:
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
 
         return (self.get_number(row - 1, col), self.get_number(row + 1, col))
 
-    def adjacent_horizontal_numbers(self, row: int, col: int) -> Tuple[Union[int, None], Union[int, None]]:
+    def adjacent_horizontal_numbers(
+        self, row: int, col: int
+    ) -> Tuple[Union[int, None], Union[int, None]]:
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
 
@@ -100,8 +109,12 @@ class Board:
         """Devolve True se a introdução do num na posição (row, col) impossibilitar que o número de 0s e 1s seja igual."""
 
         t = (num + 1) % 2
-        return ((self.count_col(col, num) - self.count_col(col, t)) >= self.count_col(col, 2)) or (
-            (self.count_row(row, num) - self.count_row(row, t)) >= self.count_row(row, 2)
+        return (
+            (self.count_col(col, num) - self.count_col(col, t))
+            >= self.count_col(col, 2)
+        ) or (
+            (self.count_row(row, num) - self.count_row(row, t))
+            >= self.count_row(row, 2)
         )
 
     def possible_values_for_square(self, row: int, col: int) -> List[int]:
@@ -145,9 +158,14 @@ class Board:
 
     def place(self, row: int, col: int, value: int):
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
-        copy_matrix = [[self.matrix[i][j] for j in range(len(self.matrix[i]))] for i in range(self.size)]
-        copy_matrix[row][col] = value
-        new_matrix = tuple(tuple(row) for row in copy_matrix)
+
+        new_matrix = tuple(
+            tuple(
+                value if (i == row and j == col) else self.matrix[i][j]
+                for j in range(len(self.matrix[i]))
+            )
+            for i in range(self.size)
+        )
         return Board(new_matrix, self.size, self.free_squares - 1)
 
     def filled(self) -> bool:
@@ -167,16 +185,15 @@ class Board:
 
         size = int(stdin.readline())
         free_squares = size * size
-        matrix = []
+        matrix: List[Tuple[int]] = []
         for _ in range(size):
-            row = []
+            row: List[int] = []
             for entry in stdin.readline().split("\t"):
                 row.append(int(entry))
                 if int(entry) != 2:
                     free_squares -= 1
             matrix.append(tuple(row))
-        matrix = tuple(matrix)
-        return Board(matrix, size, free_squares)
+        return Board(tuple(matrix), size, free_squares)
 
 
 class TakuzuState:
