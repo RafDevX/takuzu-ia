@@ -2,9 +2,9 @@
 # Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
 # Além das funções e classes já definidas, podem acrescentar outras que considerem pertinentes.
 
-# Grupo 00:
-# 00000 Nome1
-# 00000 Nome2
+# Grupo 40:
+# 99311 Rafael Serra e Oliveira
+# 99335 Tiago Vieira da Silva
 
 from sys import stdin
 from typing import List, Tuple, Union
@@ -42,7 +42,7 @@ class Board:
         self.free_squares = free_squares
 
     def __str__(self) -> str:
-        """Imprime o tabuleiro."""
+        """Representação externa do tabuleiro."""
 
         string = ""
         for row in self.matrix:
@@ -169,6 +169,8 @@ class Board:
         return Board(new_matrix, self.size, self.free_squares - 1)
 
     def filled(self) -> bool:
+        """Devolve True se o tabuleiro estiver completo."""
+
         return self.free_squares == 0
 
     @staticmethod
@@ -201,26 +203,46 @@ class TakuzuState:
     board: Board
 
     def __init__(self, board):
+        """Inicializa o estado com o tabuleiro indicado."""
+
         self.board = board
         self.id = TakuzuState.state_id
         TakuzuState.state_id += 1
 
     def __lt__(self, other):
+        """Devolve True se o estado for anterior a outro."""
+
         return self.id < other.id
 
-    def place(self, row: int, col: int, value: int):
+    def __str__(self):
+        """Representação externa do estado."""
+
+        return str(self.board)
+
+    def __repr__(self):
+        """Representação interna do estado."""
+
+        return f"TakuzuState({repr(self.board)})"
+
+    def place(self, row: int, col: int, value: int) -> "TakuzuState":
+        """Devolve um novo estado com o valor colocado na posição indicada."""
+
         return TakuzuState(self.board.place(row, col, value))
 
     def board_filled(self):
+        """Devolve True se o tabuleiro estiver completo."""
+
         return self.board.filled()
 
     def get_possible_values(self, row: int, col: int) -> List[int]:
+        """Devolve uma lista com os valores possíveis para a posição indicada."""
+
         return self.board.possible_values_for_square(row, col)
 
     def get_square_number(self, row: int, col: int) -> Union[int, None]:
-        return self.board.get_number(row, col)
+        """Devolve o número da posição indicada."""
 
-    # TODO: outros metodos da classe
+        return self.board.get_number(row, col)
 
 
 class Takuzu(Problem):
@@ -289,8 +311,7 @@ if __name__ == "__main__":
     goal_node = depth_first_tree_search(problem)
     # Verificar se foi atingida a solução
     if goal_node:
-        print("Is goal?", problem.goal_test(goal_node.state))
-        print("Solution:\n", goal_node.state.board, sep="")
+        print(goal_node.state)
     else:
         print("No solution found")
 
