@@ -7,7 +7,7 @@
 # 99335 Tiago Vieira da Silva
 
 from sys import stdin
-from typing import List, Tuple, Union
+from typing import Callable, Dict, List, Set, Tuple, Union
 from search import (
     Problem,
     Node,
@@ -30,6 +30,7 @@ class Board:
     def __init__(
         self,
         matrix: Tuple[Tuple[int, ...], ...],
+        domains: Tuple[Tuple[Tuple[int, ...], ...], ...],
         size: int,
         free_squares: int,
     ):
@@ -38,28 +39,46 @@ class Board:
         """
 
         self.matrix = matrix
+        self.domains = domains
         self.size = size
         self.free_squares = free_squares
 
     def __str__(self) -> str:
         """Representação externa do tabuleiro."""
 
-        string = ""
-        for row in self.matrix:
-            string += "\t".join(str(x) for x in row) + "\n"
-        return string
+        return "\n".join(["\t".join(str(x) for x in row) for row in self.matrix])
 
     def __repr__(self) -> str:
         """Representação interna do tabuleiro."""
 
-        return f"Board({self.size}, {self.matrix})"
+        return f"Board({self.matrix}, {self.domains}, {self.size}, {self.free_squares})"
+
+    def print_pretty_repr(self) -> None:
+        """Devolve uma representação do tabuleiro em formato legível."""
+
+        for i in range(self.size):
+            for j in range(self.size):
+                print(
+                    f"[{self.get_number(i, j)}, {str(self.get_domain(i, j)).ljust(len('(0, 1)'))}]",
+                    end="\t",
+                )
+            print()
 
     def get_number(self, row: int, col: int) -> Union[int, None]:
         """Devolve o valor na respetiva posição do tabuleiro, ou None se a posição for inválida."""
 
-        if row < 0 or row >= self.size or col < 0 or col >= self.size:
+        try:
+            return self.matrix[row][col]
+        except IndexError:
             return None
-        return self.matrix[row][col]
+
+    def get_domain(self, row: int, col: int) -> Tuple[int, ...]:
+        """Devolve o domínio da posição indicada."""
+
+        try:
+            return self.domains[row][col]
+        except IndexError:
+            return ()
 
     def adjacent_vertical_numbers(
         self, row: int, col: int
@@ -156,7 +175,7 @@ class Board:
 
         return possible_values
 
-    def place(self, row: int, col: int, value: int):
+    def place(self, row: int, col: int, value: int) -> "Board":
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
 
         new_matrix = tuple(
@@ -166,12 +185,115 @@ class Board:
             )
             for i in range(self.size)
         )
-        return Board(new_matrix, self.size, self.free_squares - 1)
+
+        new_board = Board(new_matrix, self.domains, self.size, self.free_squares - 1)
+        new_board.recalculate_domains_after_placing(row, col, value)
+
+        return new_board
 
     def filled(self) -> bool:
         """Devolve True se o tabuleiro estiver completo."""
 
         return self.free_squares == 0
+
+    def recalculate_domains_after_placing(self, row: int, col: int, value: int) -> None:
+        """Recalcula os domínios após a introdução de um valor na posição (row, col)."""
+
+        new_domains: Dict[Tuple[int, int], Set[int]] = {(row, col): {value}}
+
+        print("I am looking at ", (row, col))
+        self.print_pretty_repr()
+
+        # Não permitir três números adjacentes iguais
+        for (closest, furthest) in (
+            *(((row + delta, col), (row + 2 * delta, col)) for delta in (-1, 1)),
+            *(((row, col + delta), (row, col + 2 * delta)) for delta in (-1, 1)),
+        ):
+            print("Closest: ", closest, "Furthest: ", furthest)
+            closest_val = self.get_number(*closest)
+            furthest_val = self.get_number(*furthest)
+            if closest_val == 2 and furthest_val == value:
+                new_domains.setdefault(closest, set((0, 1))).difference_update((value,))
+                print("(1) Did things for ", closest, "; took ", value)  # FIXME: remove
+            elif closest_val == value and furthest_val == 2:
+                new_domains.setdefault(furthest, set((0, 1))).difference_update(
+                    (value,)
+                )
+                print(
+                    "(2) Did things for ", furthest, "; took ", value
+                )  # FIXME: remove
+
+        # Não permitir linhas nem colunas iguais
+        for (key, getter, counter, packer) in (
+            (row, self.get_row, self.count_row, lambda x, y: (x, y)),
+            (col, self.get_column, self.count_col, lambda x, y: (y, x)),
+        ):
+            this = getter(key)
+            if counter(key, 2) == 0:
+                for i in range(self.size):
+                    other = getter(i)
+                    if i != key and counter(i, 2) == 1:
+                        empty_j = other.index(2)
+                        for possible_value in self.get_domain(*(packer(i, empty_j))):
+                            if (
+                                tuple(
+                                    possible_value if j == empty_j else other[j]
+                                    for j in range(self.size)
+                                )
+                                == this
+                            ):
+                                print(
+                                    "(3) Did things for ",
+                                    packer(i, empty_j),
+                                    "; took ",
+                                    possible_value,
+                                )  # FIXME: remove
+                                new_domains.setdefault(
+                                    packer(i, empty_j), set((0, 1))
+                                ).difference_update((possible_value,))
+
+        # Número de valores por linha e coluna deve ser ~igual
+        max_diff = self.size % 2
+        # FIXME: delete the ___key param, only used for debug prints
+        for (___key, this, packer) in (
+            ("row", self.get_row(row), lambda other_coord: (row, other_coord)),
+            ("col", self.get_column(col), lambda other_coord: (other_coord, col)),
+        ):
+            constraint_domain = set((0, 1))
+            for value in (0, 1):
+                if this.count(value) >= self.size // 2 + max_diff:
+                    constraint_domain.difference_update((value,))
+                    print(
+                        "(4) Did things for ",
+                        ___key,
+                        " ",
+                        packer("*"),
+                        "; took ",
+                        value,
+                    )  # FIXME: remove
+            for i in range(self.size):
+                if this[i] == 2:
+                    new_domains.setdefault(packer(i), set((0, 1))).intersection_update(
+                        constraint_domain
+                    )
+
+        # Guardar a interseção dos domínios novos com os atuais
+        self.domains = tuple(
+            tuple(
+                tuple(
+                    new_domains.setdefault((i, j), set((0, 1))).intersection(
+                        self.get_domain(i, j)
+                    )
+                )
+                if (i, j) in new_domains
+                else self.get_domain(i, j)
+                for j in range(self.size)
+            )
+            for i in range(self.size)
+        )
+
+        print("AFTER:")
+        self.print_pretty_repr()
 
     @staticmethod
     def parse_instance_from_stdin() -> "Board":
@@ -188,14 +310,28 @@ class Board:
         size = int(stdin.readline())
         free_squares = size * size
         matrix: List[Tuple[int, ...]] = []
+        domains: List[Tuple[Tuple[int, ...]]] = []
+        needs_revision: List[Tuple[int, int, int]] = []
         for _ in range(size):
             row: List[int] = []
+            row_domains: List[Tuple[int, ...]] = []
             for entry in stdin.readline().split("\t"):
                 row.append(int(entry))
-                if int(entry) != 2:
+                if int(entry) == 2:
+                    row_domains.append((0, 1))
+                else:
+                    row_domains.append((int(entry),))
+                    needs_revision.append((len(matrix), len(row) - 1, int(entry)))
                     free_squares -= 1
             matrix.append(tuple(row))
-        return Board(tuple(matrix), size, free_squares)
+            domains.append(tuple(row_domains))
+
+        board = Board(tuple(matrix), tuple(domains), size, free_squares)
+        for action in needs_revision:
+            print("Revisioning ", action)
+            board.recalculate_domains_after_placing(*action)
+
+        return board
 
 
 class TakuzuState:
@@ -234,10 +370,15 @@ class TakuzuState:
 
         return self.board.filled()
 
-    def get_possible_values(self, row: int, col: int) -> List[int]:
+    def recalculate_domains_after_placing(self, row: int, col: int, val: int) -> None:
+        """Recalcula os domínios após a introdução de um valor na posição (row, col)."""
+
+        self.board.recalculate_domains_after_placing(row, col, val)
+
+    def get_domain(self, row: int, col: int) -> Tuple[int, ...]:
         """Devolve uma lista com os valores possíveis para a posição indicada."""
 
-        return self.board.possible_values_for_square(row, col)
+        return self.board.get_domain(row, col)
 
     def get_square_number(self, row: int, col: int) -> Union[int, None]:
         """Devolve o número da posição indicada."""
@@ -261,12 +402,23 @@ class Takuzu(Problem):
         if state.board_filled():
             return actions
 
+        # for row in range(board.size):
+        #     for col in range(board.size):
+        #         # Só considerar casas vazias
+        #         if state.get_square_number(row, col) == 2:
+        #             for value in state.get_domain(row, col):
+        #                 actions.append((row, col, value))
+
         for row in range(board.size):
             for col in range(board.size):
-                # Só considerar casas vazias
+                # Só considerar as ações para a primeira casa vazia
                 if state.get_square_number(row, col) == 2:
-                    for value in state.get_possible_values(row, col):
-                        actions.append((row, col, value))
+                    # TODO: change to tuple
+                    l = [(row, col, value) for value in state.get_domain(row, col)]
+                    print("Actions:", l)
+                    return l
+
+        print("ACTIONS: ", actions)
 
         return actions
 
@@ -307,6 +459,31 @@ if __name__ == "__main__":
     board = Board.parse_instance_from_stdin()
     # Criar uma instância de Takuzu:
     problem = Takuzu(board)
+
+    # FIXME: remove below debug code
+    # state = problem.initial
+    # correct = ( # test 3
+    #     (0, 1, 1, 0, 0, 1, 1, 0),
+    #     (1, 0, 0, 1, 0, 0, 1, 1),
+    #     (1, 0, 1, 0, 1, 0, 0, 1),
+    #     (0, 1, 0, 1, 0, 1, 1, 0),
+    #     (1, 0, 1, 0, 1, 1, 0, 0),
+    #     (0, 1, 1, 0, 1, 0, 0, 1),
+    #     (1, 0, 0, 1, 0, 1, 1, 0),
+    #     (0, 1, 0, 1, 1, 0, 0, 1),
+    # )
+    # while stdin.readline():
+    #     state = problem.result(state, problem.actions(state)[0])
+    #     print("------------------- NEW ACTION -------------------")
+    #     state.board.print_pretty_repr()
+    #     for i in range(state.board.size):
+    #         for j in range(state.board.size):
+    #             guess = state.get_square_number(i, j)
+    #             if guess != 2 and guess != correct[i][j]:
+    #                 print("ERROR:", i, j, guess, correct[i][j])
+
+    # exit(1)
+
     # Obter o nó solução usando a procura em profundidade:
     goal_node = depth_first_tree_search(problem)
     # Verificar se foi atingida a solução
