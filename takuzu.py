@@ -201,9 +201,6 @@ class Board:
 
         new_domains: Dict[Tuple[int, int], Set[int]] = {(row, col): {value}}
 
-        print("I am looking at ", (row, col))
-        self.print_pretty_repr()
-
         # Não permitir três números adjacentes iguais
         for (closest, furthest) in (
             *(((row + delta, col), (row + 2 * delta, col)) for delta in (-1, 1)),
@@ -211,19 +208,14 @@ class Board:
             *(((row, col + delta), (row, col + 2 * delta)) for delta in (-1, 1)),
             *(((row, col - delta), (row, col + delta)) for delta in (-1, 1)),
         ):
-            print("Closest: ", closest, "Furthest: ", furthest)
             closest_val = self.get_number(*closest)
             furthest_val = self.get_number(*furthest)
             if closest_val == 2 and furthest_val == value:
                 new_domains.setdefault(closest, set((0, 1))).difference_update((value,))
-                print("(1) Did things for ", closest, "; took ", value)  # FIXME: remove
             elif closest_val == value and furthest_val == 2:
                 new_domains.setdefault(furthest, set((0, 1))).difference_update(
                     (value,)
                 )
-                print(
-                    "(2) Did things for ", furthest, "; took ", value
-                )  # FIXME: remove
 
         # Não permitir linhas nem colunas iguais
         for (key, getter, counter, packer) in (
@@ -244,35 +236,20 @@ class Board:
                                 )
                                 == this
                             ):
-                                print(
-                                    "(3) Did things for ",
-                                    packer(i, empty_j),
-                                    "; took ",
-                                    possible_value,
-                                )  # FIXME: remove
                                 new_domains.setdefault(
                                     packer(i, empty_j), set((0, 1))
                                 ).difference_update((possible_value,))
 
         # Número de valores por linha e coluna deve ser ~igual
         max_diff = self.size % 2
-        # FIXME: delete the ___key param, only used for debug prints
-        for (___key, this, packer) in (
-            ("row", self.get_row(row), lambda other_coord: (row, other_coord)),
-            ("col", self.get_column(col), lambda other_coord: (other_coord, col)),
+        for (this, packer) in (
+            (self.get_row(row), lambda other_coord: (row, other_coord)),
+            (self.get_column(col), lambda other_coord: (other_coord, col)),
         ):
             constraint_domain = set((0, 1))
             for value in (0, 1):
                 if this.count(value) >= self.size // 2 + max_diff:
                     constraint_domain.difference_update((value,))
-                    print(
-                        "(4) Did things for ",
-                        ___key,
-                        " ",
-                        packer("*"),
-                        "; took ",
-                        value,
-                    )  # FIXME: remove
             for i in range(self.size):
                 if this[i] == 2:
                     new_domains.setdefault(packer(i), set((0, 1))).intersection_update(
@@ -293,9 +270,6 @@ class Board:
             )
             for i in range(self.size)
         )
-
-        print("AFTER:")
-        self.print_pretty_repr()
 
     @staticmethod
     def parse_instance_from_stdin() -> "Board":
@@ -330,7 +304,6 @@ class Board:
 
         board = Board(tuple(matrix), tuple(domains), size, free_squares)
         for action in needs_revision:
-            print("Revisioning ", action)
             board.recalculate_domains_after_placing(*action)
 
         return board
@@ -417,10 +390,7 @@ class Takuzu(Problem):
                 if state.get_square_number(row, col) == 2:
                     # TODO: change to tuple
                     l = [(row, col, value) for value in state.get_domain(row, col)]
-                    print("Actions:", l)
                     return l
-
-        print("ACTIONS: ", actions)
 
         return actions
 
@@ -461,31 +431,6 @@ if __name__ == "__main__":
     board = Board.parse_instance_from_stdin()
     # Criar uma instância de Takuzu:
     problem = Takuzu(board)
-
-    # FIXME: remove below debug code
-    # state = problem.initial
-    # correct = ( # test 3
-    #     (0, 1, 1, 0, 0, 1, 1, 0),
-    #     (1, 0, 0, 1, 0, 0, 1, 1),
-    #     (1, 0, 1, 0, 1, 0, 0, 1),
-    #     (0, 1, 0, 1, 0, 1, 1, 0),
-    #     (1, 0, 1, 0, 1, 1, 0, 0),
-    #     (0, 1, 1, 0, 1, 0, 0, 1),
-    #     (1, 0, 0, 1, 0, 1, 1, 0),
-    #     (0, 1, 0, 1, 1, 0, 0, 1),
-    # )
-    # while stdin.readline():
-    #     state = problem.result(state, problem.actions(state)[0])
-    #     print("------------------- NEW ACTION -------------------")
-    #     state.board.print_pretty_repr()
-    #     for i in range(state.board.size):
-    #         for j in range(state.board.size):
-    #             guess = state.get_square_number(i, j)
-    #             if guess != 2 and guess != correct[i][j]:
-    #                 print("ERROR:", i, j, guess, correct[i][j])
-
-    # exit(1)
-
     # Obter o nó solução usando a procura em profundidade:
     goal_node = depth_first_tree_search(problem)
     # Verificar se foi atingida a solução
