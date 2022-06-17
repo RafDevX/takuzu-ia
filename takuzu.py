@@ -207,7 +207,9 @@ class Board:
         # Não permitir três números adjacentes iguais
         for (closest, furthest) in (
             *(((row + delta, col), (row + 2 * delta, col)) for delta in (-1, 1)),
+            *(((row - delta, col), (row + delta, col)) for delta in (-1, 1)),
             *(((row, col + delta), (row, col + 2 * delta)) for delta in (-1, 1)),
+            *(((row, col - delta), (row, col + delta)) for delta in (-1, 1)),
         ):
             print("Closest: ", closest, "Furthest: ", furthest)
             closest_val = self.get_number(*closest)
