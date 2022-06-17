@@ -223,10 +223,11 @@ class Board:
             (col, self.get_column, self.count_col, lambda x, y: (y, x)),
         ):
             this = getter(key)
-            if counter(key, 2) == 0:
+            empty_count = counter(key, 2)
+            if empty_count == 0:
                 for i in range(self.size):
-                    other = getter(i)
                     if i != key and counter(i, 2) == 1:
+                        other = getter(i)
                         empty_j = other.index(2)
                         for possible_value in self.get_domain(*(packer(i, empty_j))):
                             if (
@@ -238,6 +239,19 @@ class Board:
                             ):
                                 new_domains.setdefault(
                                     packer(i, empty_j), set((0, 1))
+                                ).difference_update((possible_value,))
+            elif empty_count == 1:
+                empty_j = this.index(2)
+                empty_j_domain = self.get_domain(*(packer(key, empty_j)))
+                for i in range(self.size):
+                    if i != key and counter(i, 2) == 0:
+                        for possible_value in empty_j_domain:
+                            if tuple(
+                                possible_value if j == empty_j else this[j]
+                                for j in range(self.size)
+                            ) == getter(i):
+                                new_domains.setdefault(
+                                    packer(key, empty_j), set((0, 1))
                                 ).difference_update((possible_value,))
 
         # Número de valores por linha e coluna deve ser ~igual
