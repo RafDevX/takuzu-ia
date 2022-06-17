@@ -368,31 +368,24 @@ class Takuzu(Problem):
         initial_state = TakuzuState(board)
         super().__init__(initial_state)
 
-    def actions(self, state: TakuzuState) -> List[Tuple[int, int, int]]:
+    def actions(self, state: TakuzuState) -> Tuple[Tuple[int, int, int]]:
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
 
-        actions = []
-
         if state.board_filled():
-            return actions
+            return tuple()
 
-        # for row in range(board.size):
-        #     for col in range(board.size):
-        #         # Só considerar casas vazias
-        #         if state.get_square_number(row, col) == 2:
-        #             for value in state.get_domain(row, col):
-        #                 actions.append((row, col, value))
+        # TODO: sort by domain size
 
         for row in range(board.size):
             for col in range(board.size):
                 # Só considerar as ações para a primeira casa vazia
                 if state.get_square_number(row, col) == 2:
-                    # TODO: change to tuple
-                    l = [(row, col, value) for value in state.get_domain(row, col)]
-                    return l
+                    return tuple(
+                        (row, col, value) for value in state.get_domain(row, col)
+                    )
 
-        return actions
+        return tuple()
 
     def result(self, state: TakuzuState, action: Tuple[int, int, int]) -> TakuzuState:
         """Retorna o estado resultante de executar a 'action' sobre
