@@ -1,7 +1,3 @@
-# takuzu.py: Template para implementação do projeto de Inteligência Artificial 2021/2022.
-# Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
-# Além das funções e classes já definidas, podem acrescentar outras que considerem pertinentes.
-
 # Grupo 40:
 # 99311 Rafael Serra e Oliveira
 # 99335 Tiago Vieira da Silva
