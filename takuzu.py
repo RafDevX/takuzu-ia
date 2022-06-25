@@ -81,22 +81,6 @@ class Board:
         else:
             return ()
 
-    def adjacent_vertical_numbers(
-        self, row: int, col: int
-    ) -> Tuple[Union[int, None], Union[int, None]]:
-        """Devolve os valores imediatamente abaixo e acima,
-        respectivamente."""
-
-        return (self.get_number(row - 1, col), self.get_number(row + 1, col))
-
-    def adjacent_horizontal_numbers(
-        self, row: int, col: int
-    ) -> Tuple[Union[int, None], Union[int, None]]:
-        """Devolve os valores imediatamente à esquerda e à direita,
-        respectivamente."""
-
-        return (self.get_number(row, col - 1), self.get_number(row, col + 1))
-
     def get_column(self, col: int) -> Tuple[int, ...]:
         """Devolve a coluna indicada."""
 
@@ -116,65 +100,6 @@ class Board:
         """Devolve o número de num na linha indicada."""
 
         return self.get_row(row).count(num)
-
-    def will_be_repeated(self, row: int, col: int, num: int) -> bool:
-        """Devolve True se a matriz ficar com duas colunas iguais se se introduzir o num na posição (num, col)"""
-
-        (temp_row, temp_col) = list(self.get_row(row)), list(self.get_column(col))
-        temp_row[col] = num
-        temp_col[row] = num
-        return (tuple(temp_row) in self.matrix) or (tuple(temp_col) in self.matrix)
-
-    def excess_of_num(self, row: int, col: int, num: int) -> bool:
-        """Devolve True se a introdução do num na posição (row, col) impossibilitar que o número de 0s e 1s seja igual."""
-
-        t = (num + 1) % 2
-        return (
-            (self.count_col(col, num) - self.count_col(col, t))
-            >= self.count_col(col, 2)
-        ) or (
-            (self.count_row(row, num) - self.count_row(row, t))
-            >= self.count_row(row, 2)
-        )
-
-    def possible_values_for_square(self, row: int, col: int) -> List[int]:
-        """Devolve uma lista com os valores possíveis para a posição indicada."""
-
-        possible_values = []
-
-        if self.get_number(row, col) != 2:
-            return possible_values
-
-        for x in (0, 1):
-            ok = True
-
-            if self.will_be_repeated(row, col, x):
-                continue
-
-            if self.excess_of_num(row, col, x):
-                continue
-
-            for (adj_fn, abs_delta) in (
-                (self.adjacent_vertical_numbers, (1, 0)),
-                (self.adjacent_horizontal_numbers, (0, 1)),
-            ):
-                (before, after) = adj_fn(row, col)
-                if x == before == after:
-                    ok = False
-                    break
-                if before == x:
-                    if adj_fn(row - abs_delta[0], col - abs_delta[1])[0] == x:
-                        ok = False
-                        break
-                if after == x:
-                    if adj_fn(row + abs_delta[0], col + abs_delta[1])[1] == x:
-                        ok = False
-                        break
-
-            if ok:
-                possible_values.append(x)
-
-        return possible_values
 
     def place(self, row: int, col: int, value: int) -> "Board":
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
