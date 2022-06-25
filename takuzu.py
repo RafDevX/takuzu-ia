@@ -68,17 +68,17 @@ class Board:
     def get_number(self, row: int, col: int) -> Union[int, None]:
         """Devolve o valor na respetiva posição do tabuleiro, ou None se a posição for inválida."""
 
-        try:
+        if 0 <= row < self.size and 0 <= col < self.size:
             return self.matrix[row][col]
-        except IndexError:
+        else:
             return None
 
     def get_domain(self, row: int, col: int) -> Tuple[int, ...]:
         """Devolve o domínio da posição indicada."""
 
-        try:
+        if 0 <= row < self.size and 0 <= col < self.size:
             return self.domains[row][col]
-        except IndexError:
+        else:
             return ()
 
     def adjacent_vertical_numbers(
