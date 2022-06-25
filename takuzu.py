@@ -17,6 +17,7 @@ from search import (
     greedy_search,
     recursive_best_first_search,
 )
+import numpy as np
 
 
 class Board:
@@ -262,7 +263,7 @@ class Board:
         ):
             constraint_domain = set((0, 1))
             for value in (0, 1):
-                if this.count(value) >= self.size // 2 + max_diff:
+                if this.count(value) >= np.floor(self.size // 2) + max_diff:
                     constraint_domain.difference_update((value,))
             for i in range(self.size):
                 if this[i] == 2:
