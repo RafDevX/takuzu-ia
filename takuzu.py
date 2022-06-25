@@ -1,13 +1,9 @@
-# takuzu.py: Template para implementação do projeto de Inteligência Artificial 2021/2022.
-# Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
-# Além das funções e classes já definidas, podem acrescentar outras que considerem pertinentes.
-
 # Grupo 40:
 # 99311 Rafael Serra e Oliveira
 # 99335 Tiago Vieira da Silva
 
 from sys import stdin
-from typing import List, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 from search import (
     Problem,
     Node,
@@ -17,6 +13,7 @@ from search import (
     greedy_search,
     recursive_best_first_search,
 )
+import numpy as np
 
 
 class Board:
@@ -30,6 +27,7 @@ class Board:
     def __init__(
         self,
         matrix: Tuple[Tuple[int, ...], ...],
+        domains: Tuple[Tuple[Tuple[int, ...], ...], ...],
         size: int,
         free_squares: int,
     ):
@@ -38,44 +36,46 @@ class Board:
         """
 
         self.matrix = matrix
+        self.domains = domains
         self.size = size
         self.free_squares = free_squares
 
     def __str__(self) -> str:
         """Representação externa do tabuleiro."""
 
-        string = ""
-        for row in self.matrix:
-            string += "\t".join(str(x) for x in row) + "\n"
-        return string
+        return "\n".join(["\t".join(str(x) for x in row) for row in self.matrix])
 
     def __repr__(self) -> str:
         """Representação interna do tabuleiro."""
 
-        return f"Board({self.size}, {self.matrix})"
+        return f"Board({self.matrix}, {self.domains}, {self.size}, {self.free_squares})"
+
+    def print_pretty_repr(self) -> None:
+        """Devolve uma representação do tabuleiro em formato legível."""
+
+        for i in range(self.size):
+            for j in range(self.size):
+                print(
+                    f"[{self.get_number(i, j)}, {str(self.get_domain(i, j)).ljust(len('(0, 1)'))}]",
+                    end="\t",
+                )
+            print()
 
     def get_number(self, row: int, col: int) -> Union[int, None]:
         """Devolve o valor na respetiva posição do tabuleiro, ou None se a posição for inválida."""
 
-        if row < 0 or row >= self.size or col < 0 or col >= self.size:
+        if 0 <= row < self.size and 0 <= col < self.size:
+            return self.matrix[row][col]
+        else:
             return None
-        return self.matrix[row][col]
 
-    def adjacent_vertical_numbers(
-        self, row: int, col: int
-    ) -> Tuple[Union[int, None], Union[int, None]]:
-        """Devolve os valores imediatamente abaixo e acima,
-        respectivamente."""
+    def get_domain(self, row: int, col: int) -> Tuple[int, ...]:
+        """Devolve o domínio da posição indicada."""
 
-        return (self.get_number(row - 1, col), self.get_number(row + 1, col))
-
-    def adjacent_horizontal_numbers(
-        self, row: int, col: int
-    ) -> Tuple[Union[int, None], Union[int, None]]:
-        """Devolve os valores imediatamente à esquerda e à direita,
-        respectivamente."""
-
-        return (self.get_number(row, col - 1), self.get_number(row, col + 1))
+        if 0 <= row < self.size and 0 <= col < self.size:
+            return self.domains[row][col]
+        else:
+            return ()
 
     def get_column(self, col: int) -> Tuple[int, ...]:
         """Devolve a coluna indicada."""
@@ -97,66 +97,7 @@ class Board:
 
         return self.get_row(row).count(num)
 
-    def will_be_repeated(self, row: int, col: int, num: int) -> bool:
-        """Devolve True se a matriz ficar com duas colunas iguais se se introduzir o num na posição (num, col)"""
-
-        (temp_row, temp_col) = list(self.get_row(row)), list(self.get_column(col))
-        temp_row[col] = num
-        temp_col[row] = num
-        return (tuple(temp_row) in self.matrix) or (tuple(temp_col) in self.matrix)
-
-    def excess_of_num(self, row: int, col: int, num: int) -> bool:
-        """Devolve True se a introdução do num na posição (row, col) impossibilitar que o número de 0s e 1s seja igual."""
-
-        t = (num + 1) % 2
-        return (
-            (self.count_col(col, num) - self.count_col(col, t))
-            >= self.count_col(col, 2)
-        ) or (
-            (self.count_row(row, num) - self.count_row(row, t))
-            >= self.count_row(row, 2)
-        )
-
-    def possible_values_for_square(self, row: int, col: int) -> List[int]:
-        """Devolve uma lista com os valores possíveis para a posição indicada."""
-
-        possible_values = []
-
-        if self.get_number(row, col) != 2:
-            return possible_values
-
-        for x in (0, 1):
-            ok = True
-
-            if self.will_be_repeated(row, col, x):
-                continue
-
-            if self.excess_of_num(row, col, x):
-                continue
-
-            for (adj_fn, abs_delta) in (
-                (self.adjacent_vertical_numbers, (1, 0)),
-                (self.adjacent_horizontal_numbers, (0, 1)),
-            ):
-                (before, after) = adj_fn(row, col)
-                if x == before == after:
-                    ok = False
-                    break
-                if before == x:
-                    if adj_fn(row - abs_delta[0], col - abs_delta[1])[0] == x:
-                        ok = False
-                        break
-                if after == x:
-                    if adj_fn(row + abs_delta[0], col + abs_delta[1])[1] == x:
-                        ok = False
-                        break
-
-            if ok:
-                possible_values.append(x)
-
-        return possible_values
-
-    def place(self, row: int, col: int, value: int):
+    def place(self, row: int, col: int, value: int) -> "Board":
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
 
         new_matrix = tuple(
@@ -166,12 +107,105 @@ class Board:
             )
             for i in range(self.size)
         )
-        return Board(new_matrix, self.size, self.free_squares - 1)
+
+        new_board = Board(new_matrix, self.domains, self.size, self.free_squares - 1)
+        new_board.recalculate_domains_after_placing(row, col, value)
+
+        return new_board
 
     def filled(self) -> bool:
         """Devolve True se o tabuleiro estiver completo."""
 
         return self.free_squares == 0
+
+    def recalculate_domains_after_placing(self, row: int, col: int, value: int) -> None:
+        """Recalcula os domínios após a introdução de um valor na posição (row, col)."""
+
+        new_domains: Dict[Tuple[int, int], Set[int]] = {(row, col): {value}}
+
+        # Não permitir três números adjacentes iguais
+        for (closest, furthest) in (
+            *(((row + delta, col), (row + 2 * delta, col)) for delta in (-1, 1)),
+            *(((row - delta, col), (row + delta, col)) for delta in (-1, 1)),
+            *(((row, col + delta), (row, col + 2 * delta)) for delta in (-1, 1)),
+            *(((row, col - delta), (row, col + delta)) for delta in (-1, 1)),
+        ):
+            closest_val = self.get_number(*closest)
+            furthest_val = self.get_number(*furthest)
+            if closest_val == 2 and furthest_val == value:
+                new_domains.setdefault(closest, set((0, 1))).difference_update((value,))
+            elif closest_val == value and furthest_val == 2:
+                new_domains.setdefault(furthest, set((0, 1))).difference_update(
+                    (value,)
+                )
+
+        # Não permitir linhas nem colunas iguais
+        for (key, getter, counter, packer) in (
+            (row, self.get_row, self.count_row, lambda x, y: (x, y)),
+            (col, self.get_column, self.count_col, lambda x, y: (y, x)),
+        ):
+            this = getter(key)
+            empty_count = counter(key, 2)
+            if empty_count == 0:
+                for i in range(self.size):
+                    if i != key and counter(i, 2) == 1:
+                        other = getter(i)
+                        empty_j = other.index(2)
+                        for possible_value in self.get_domain(*(packer(i, empty_j))):
+                            if (
+                                tuple(
+                                    possible_value if j == empty_j else other[j]
+                                    for j in range(self.size)
+                                )
+                                == this
+                            ):
+                                new_domains.setdefault(
+                                    packer(i, empty_j), set((0, 1))
+                                ).difference_update((possible_value,))
+            elif empty_count == 1:
+                empty_j = this.index(2)
+                empty_j_domain = self.get_domain(*(packer(key, empty_j)))
+                for i in range(self.size):
+                    if i != key and counter(i, 2) == 0:
+                        for possible_value in empty_j_domain:
+                            if tuple(
+                                possible_value if j == empty_j else this[j]
+                                for j in range(self.size)
+                            ) == getter(i):
+                                new_domains.setdefault(
+                                    packer(key, empty_j), set((0, 1))
+                                ).difference_update((possible_value,))
+
+        # Número de valores por linha e coluna deve ser ~igual
+        max_diff = self.size % 2
+        for (this, packer) in (
+            (self.get_row(row), lambda other_coord: (row, other_coord)),
+            (self.get_column(col), lambda other_coord: (other_coord, col)),
+        ):
+            constraint_domain = set((0, 1))
+            for value in (0, 1):
+                if this.count(value) >= np.floor(self.size // 2) + max_diff:
+                    constraint_domain.difference_update((value,))
+            for i in range(self.size):
+                if this[i] == 2:
+                    new_domains.setdefault(packer(i), set((0, 1))).intersection_update(
+                        constraint_domain
+                    )
+
+        # Guardar a interseção dos domínios novos com os atuais
+        self.domains = tuple(
+            tuple(
+                tuple(
+                    new_domains.setdefault((i, j), set((0, 1))).intersection(
+                        self.get_domain(i, j)
+                    )
+                )
+                if (i, j) in new_domains
+                else self.get_domain(i, j)
+                for j in range(self.size)
+            )
+            for i in range(self.size)
+        )
 
     @staticmethod
     def parse_instance_from_stdin() -> "Board":
@@ -188,14 +222,27 @@ class Board:
         size = int(stdin.readline())
         free_squares = size * size
         matrix: List[Tuple[int, ...]] = []
+        domains: List[Tuple[Tuple[int, ...]]] = []
+        needs_revision: List[Tuple[int, int, int]] = []
         for _ in range(size):
             row: List[int] = []
+            row_domains: List[Tuple[int, ...]] = []
             for entry in stdin.readline().split("\t"):
                 row.append(int(entry))
-                if int(entry) != 2:
+                if int(entry) == 2:
+                    row_domains.append((0, 1))
+                else:
+                    row_domains.append((int(entry),))
+                    needs_revision.append((len(matrix), len(row) - 1, int(entry)))
                     free_squares -= 1
             matrix.append(tuple(row))
-        return Board(tuple(matrix), size, free_squares)
+            domains.append(tuple(row_domains))
+
+        board = Board(tuple(matrix), tuple(domains), size, free_squares)
+        for action in needs_revision:
+            board.recalculate_domains_after_placing(*action)
+
+        return board
 
 
 class TakuzuState:
@@ -234,10 +281,15 @@ class TakuzuState:
 
         return self.board.filled()
 
-    def get_possible_values(self, row: int, col: int) -> List[int]:
+    def recalculate_domains_after_placing(self, row: int, col: int, val: int) -> None:
+        """Recalcula os domínios após a introdução de um valor na posição (row, col)."""
+
+        self.board.recalculate_domains_after_placing(row, col, val)
+
+    def get_domain(self, row: int, col: int) -> Tuple[int, ...]:
         """Devolve uma lista com os valores possíveis para a posição indicada."""
 
-        return self.board.possible_values_for_square(row, col)
+        return self.board.get_domain(row, col)
 
     def get_square_number(self, row: int, col: int) -> Union[int, None]:
         """Devolve o número da posição indicada."""
@@ -252,23 +304,24 @@ class Takuzu(Problem):
         initial_state = TakuzuState(board)
         super().__init__(initial_state)
 
-    def actions(self, state: TakuzuState) -> List[Tuple[int, int, int]]:
+    def actions(self, state: TakuzuState) -> Tuple[Tuple[int, int, int]]:
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
 
-        actions = []
-
         if state.board_filled():
-            return actions
+            return tuple()
+
+        # TODO: sort by domain size
 
         for row in range(board.size):
             for col in range(board.size):
-                # Só considerar casas vazias
+                # Só considerar as ações para a primeira casa vazia
                 if state.get_square_number(row, col) == 2:
-                    for value in state.get_possible_values(row, col):
-                        actions.append((row, col, value))
+                    return tuple(
+                        (row, col, value) for value in state.get_domain(row, col)
+                    )
 
-        return actions
+        return tuple()
 
     def result(self, state: TakuzuState, action: Tuple[int, int, int]) -> TakuzuState:
         """Retorna o estado resultante de executar a 'action' sobre
@@ -292,11 +345,8 @@ class Takuzu(Problem):
         # TODO
         pass
 
-    # TODO: outros metodos da classe
-
 
 if __name__ == "__main__":
-    # TODO:
     # Ler o ficheiro do standard input,
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
@@ -314,5 +364,3 @@ if __name__ == "__main__":
         print(goal_node.state)
     else:
         print("No solution found")
-
-    # TODO:
