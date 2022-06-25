@@ -7,7 +7,7 @@
 # 99335 Tiago Vieira da Silva
 
 from sys import stdin
-from typing import Callable, Dict, List, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 from search import (
     Problem,
     Node,
@@ -424,11 +424,8 @@ class Takuzu(Problem):
         # TODO
         pass
 
-    # TODO: outros metodos da classe
-
 
 if __name__ == "__main__":
-    # TODO:
     # Ler o ficheiro do standard input,
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
@@ -446,5 +443,3 @@ if __name__ == "__main__":
         print(goal_node.state)
     else:
         print("No solution found")
-
-    # TODO:
