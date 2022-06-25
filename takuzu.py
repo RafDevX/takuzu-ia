@@ -311,17 +311,28 @@ class Takuzu(Problem):
         if state.board_filled():
             return tuple()
 
-        # TODO: sort by domain size
+        possible_actions: List[Tuple[Tuple[int, int, int]]] = []
 
         for row in range(board.size):
             for col in range(board.size):
                 # Só considerar as ações para a primeira casa vazia
                 if state.get_square_number(row, col) == 2:
-                    return tuple(
-                        (row, col, value) for value in state.get_domain(row, col)
+                    possible_actions.append(
+                        tuple(
+                            tuple(
+                                (row, col, value)
+                                for value in state.get_domain(row, col)
+                            ),
+                        )
                     )
 
-        return tuple()
+        # Otimização: ordenar por tamanho de domínio mais pequeno
+        sorted_actions = sorted(possible_actions, key=lambda x: len(x))
+
+        if len(sorted_actions) > 0:
+            return sorted_actions[0]
+        else:
+            return tuple()
 
     def result(self, state: TakuzuState, action: Tuple[int, int, int]) -> TakuzuState:
         """Retorna o estado resultante de executar a 'action' sobre
