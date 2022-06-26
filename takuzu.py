@@ -122,6 +122,12 @@ class Board:
         """Recalcula os domínios após a introdução de um valor na posição (row, col)."""
 
         new_domains: Dict[Tuple[int, int], Set[int]] = {(row, col): {value}}
+        get_new_domain = (
+            lambda pos: new_domains[pos]
+            # redundant check but avoids unnecesarily getting domain
+            if pos in new_domains
+            else new_domains.setdefault(pos, set(self.get_domain(*pos)))
+        )
 
         # Não permitir três números adjacentes iguais
         for (closest, furthest) in (
@@ -133,11 +139,9 @@ class Board:
             closest_val = self.get_number(*closest)
             furthest_val = self.get_number(*furthest)
             if closest_val == 2 and furthest_val == value:
-                new_domains.setdefault(closest, set((0, 1))).difference_update((value,))
+                get_new_domain(closest).difference_update((value,))
             elif closest_val == value and furthest_val == 2:
-                new_domains.setdefault(furthest, set((0, 1))).difference_update(
-                    (value,)
-                )
+                get_new_domain(furthest).difference_update((value,))
 
         # Não permitir linhas nem colunas iguais
         for (key, getter, counter, packer) in (
@@ -151,7 +155,8 @@ class Board:
                     if i != key and counter(i, 2) == 1:
                         other = getter(i)
                         empty_j = other.index(2)
-                        for possible_value in self.get_domain(*(packer(i, empty_j))):
+                        empty_j_domain = get_new_domain((i, empty_j))
+                        for possible_value in tuple(empty_j_domain):
                             if (
                                 tuple(
                                     possible_value if j == empty_j else other[j]
@@ -159,22 +164,18 @@ class Board:
                                 )
                                 == this
                             ):
-                                new_domains.setdefault(
-                                    packer(i, empty_j), set((0, 1))
-                                ).difference_update((possible_value,))
+                                empty_j_domain.difference_update((possible_value,))
             elif empty_count == 1:
                 empty_j = this.index(2)
-                empty_j_domain = self.get_domain(*(packer(key, empty_j)))
+                empty_j_domain = get_new_domain((key, empty_j))
                 for i in range(self.size):
                     if i != key and counter(i, 2) == 0:
-                        for possible_value in empty_j_domain:
+                        for possible_value in tuple(empty_j_domain):
                             if tuple(
                                 possible_value if j == empty_j else this[j]
                                 for j in range(self.size)
                             ) == getter(i):
-                                new_domains.setdefault(
-                                    packer(key, empty_j), set((0, 1))
-                                ).difference_update((possible_value,))
+                                empty_j_domain.difference_update((possible_value,))
 
         # Número de valores por linha e coluna deve ser ~igual
         max_diff = self.size % 2
@@ -188,18 +189,12 @@ class Board:
                     constraint_domain.difference_update((value,))
             for i in range(self.size):
                 if this[i] == 2:
-                    new_domains.setdefault(packer(i), set((0, 1))).intersection_update(
-                        constraint_domain
-                    )
+                    get_new_domain(packer(i)).intersection_update(constraint_domain)
 
         # Guardar a interseção dos domínios novos com os atuais
         self.domains = tuple(
             tuple(
-                tuple(
-                    new_domains.setdefault((i, j), set((0, 1))).intersection(
-                        self.get_domain(i, j)
-                    )
-                )
+                tuple(new_domains.get((i, j)) or ())
                 if (i, j) in new_domains
                 else self.get_domain(i, j)
                 for j in range(self.size)
