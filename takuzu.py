@@ -359,8 +359,23 @@ class Takuzu(Problem):
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
 
-        # TODO
-        return 0
+        # Heurística de Afinidade: se existirem mais 1s que 0s à volta de
+        # uma posição, é mais provável que o seu valor seja 0.
+
+        if node.action is None:
+            return 0
+
+        (row, col, value) = node.action
+        counters = [0, 0, 0]  # keys: 0, 1, 2
+        for val in (
+            *node.state.board.adjacent_vertical_numbers(row, col),
+            *node.state.board.adjacent_horizontal_numbers(row, col),
+        ):
+            if val is not None:
+                counters[val] += 1
+
+        other = 1 if value == 0 else 0
+        return counters[value] - counters[other]  # TODO: maybe - counters[2]?
 
 
 if __name__ == "__main__":
