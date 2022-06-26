@@ -87,6 +87,22 @@ class Board:
 
         return self.matrix[row]
 
+    def adjacent_vertical_numbers(
+        self, row: int, col: int
+    ) -> Tuple[Optional[int], Optional[int]]:
+        """Devolve os valores imediatamente abaixo e acima,
+        respectivamente."""
+
+        return (self.get_number(row - 1, col), self.get_number(row + 1, col))
+
+    def adjacent_horizontal_numbers(
+        self, row: int, col: int
+    ) -> Tuple[Optional[int], Optional[int]]:
+        """Devolve os valores imediatamente à esquerda e à direita,
+        respectivamente."""
+
+        return (self.get_number(row, col - 1), self.get_number(row, col + 1))
+
     def count_col(self, col: int, num: int) -> int:
         """Devolve o número de num na coluna indicada."""
 
