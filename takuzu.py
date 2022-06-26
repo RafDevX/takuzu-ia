@@ -3,7 +3,7 @@
 # 99335 Tiago Vieira da Silva
 
 from sys import stdin
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple
 from search import (
     Problem,
     Node,
@@ -61,7 +61,7 @@ class Board:
                 )
             print()
 
-    def get_number(self, row: int, col: int) -> Union[int, None]:
+    def get_number(self, row: int, col: int) -> Optional[int]:
         """Devolve o valor na respetiva posição do tabuleiro, ou None se a posição for inválida."""
 
         if 0 <= row < self.size and 0 <= col < self.size:
@@ -291,7 +291,7 @@ class TakuzuState:
 
         return self.board.get_domain(row, col)
 
-    def get_square_number(self, row: int, col: int) -> Union[int, None]:
+    def get_square_number(self, row: int, col: int) -> Optional[int]:
         """Devolve o número da posição indicada."""
 
         return self.board.get_number(row, col)
@@ -304,35 +304,29 @@ class Takuzu(Problem):
         initial_state = TakuzuState(board)
         super().__init__(initial_state)
 
-    def actions(self, state: TakuzuState) -> Tuple[Tuple[int, int, int]]:
+    def actions(self, state: TakuzuState) -> Tuple[Tuple[int, int, int], ...]:
         """Retorna uma lista de ações que podem ser executadas a
         partir do estado passado como argumento."""
 
         if state.board_filled():
             return tuple()
 
-        possible_actions: List[Tuple[Tuple[int, int, int]]] = []
+        necessary_action: Optional[Tuple[int, int, int]] = None
+        possible_actions: Optional[Tuple[Tuple[int, int, int], ...]] = None
 
         for row in range(board.size):
             for col in range(board.size):
                 # Só considerar as ações para a primeira casa vazia
                 if state.get_square_number(row, col) == 2:
-                    possible_actions.append(
-                        tuple(
-                            tuple(
-                                (row, col, value)
-                                for value in state.get_domain(row, col)
-                            ),
-                        )
-                    )
+                    domain = state.get_domain(row, col)
+                    if len(domain) == 0:
+                        return tuple()  # impossible
+                    elif len(domain) == 1 and necessary_action is None:
+                        necessary_action = (row, col, domain[0])
+                    elif possible_actions is None:
+                        possible_actions = tuple((row, col, value) for value in domain)
 
-        # Otimização: ordenar por tamanho de domínio mais pequeno
-        sorted_actions = sorted(possible_actions, key=lambda x: len(x))
-
-        if len(sorted_actions) > 0:
-            return sorted_actions[0]
-        else:
-            return tuple()
+        return (necessary_action,) if necessary_action else possible_actions or ()
 
     def result(self, state: TakuzuState, action: Tuple[int, int, int]) -> TakuzuState:
         """Retorna o estado resultante de executar a 'action' sobre
