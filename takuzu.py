@@ -12,6 +12,7 @@ from search import (
     depth_first_tree_search,
     greedy_search,
     recursive_best_first_search,
+    compare_searchers,
 )
 import numpy as np
 
@@ -359,7 +360,7 @@ class Takuzu(Problem):
         """Função heuristica utilizada para a procura A*."""
 
         # TODO
-        pass
+        return 0
 
 
 if __name__ == "__main__":
@@ -373,6 +374,20 @@ if __name__ == "__main__":
     board = Board.parse_instance_from_stdin()
     # Criar uma instância de Takuzu:
     problem = Takuzu(board)
+
+    # compare_searchers(
+    #     [problem],
+    #     ["Searcher", "<succs/goal_tests/states/found>"],
+    #     [
+    #         astar_search,
+    #         breadth_first_tree_search,
+    #         depth_first_tree_search,
+    #         greedy_search,
+    #         recursive_best_first_search,
+    #     ],
+    # )
+    # exit(1)
+
     # Obter o nó solução usando a procura em profundidade:
     goal_node = depth_first_tree_search(problem)
     # Verificar se foi atingida a solução
