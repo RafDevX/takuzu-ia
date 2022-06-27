@@ -384,7 +384,7 @@ class Takuzu(Problem):
                 if len(domain) == 2:
                     domain_counter[domain[0]] += 1
 
-        heuristics += domain_counter[0] / domain_counter[1]
+        heuristics += domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0
         return heuristics
 
 
