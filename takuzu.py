@@ -13,7 +13,6 @@ from search import (
     greedy_search,
     recursive_best_first_search,
 )
-import numpy as np
 
 
 class Board:
@@ -49,17 +48,6 @@ class Board:
         """Representação interna do tabuleiro."""
 
         return f"Board({self.matrix}, {self.domains}, {self.size}, {self.free_squares})"
-
-    def print_pretty_repr(self) -> None:
-        """Devolve uma representação do tabuleiro em formato legível."""
-
-        for i in range(self.size):
-            for j in range(self.size):
-                print(
-                    f"[{self.get_number(i, j)}, {str(self.get_domain(i, j)).ljust(len('(0, 1)'))}]",
-                    end="\t",
-                )
-            print()
 
     def get_number(self, row: int, col: int) -> Optional[int]:
         """Devolve o valor na respetiva posição do tabuleiro, ou None se a posição for inválida."""
@@ -101,11 +89,7 @@ class Board:
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
 
         new_matrix = tuple(
-            tuple(
-                value if (i == row and j == col) else self.matrix[i][j]
-                for j in range(self.size)
-            )
-            for i in range(self.size)
+            tuple(value if (i == row and j == col) else self.matrix[i][j] for j in range(self.size)) for i in range(self.size)
         )
 
         new_board = Board(new_matrix, self.domains, self.size, self.free_squares - 1)
@@ -155,26 +139,17 @@ class Board:
                     if i != key and counter(i, 2) == 1:
                         other = getter(i)
                         empty_j = other.index(2)
-                        empty_j_domain = get_new_domain((i, empty_j))
+                        empty_j_domain = get_new_domain(packer(i, empty_j))
                         for possible_value in tuple(empty_j_domain):
-                            if (
-                                tuple(
-                                    possible_value if j == empty_j else other[j]
-                                    for j in range(self.size)
-                                )
-                                == this
-                            ):
+                            if tuple(possible_value if j == empty_j else other[j] for j in range(self.size)) == this:
                                 empty_j_domain.difference_update((possible_value,))
             elif empty_count == 1:
                 empty_j = this.index(2)
-                empty_j_domain = get_new_domain((key, empty_j))
+                empty_j_domain = get_new_domain(packer(key, empty_j))
                 for i in range(self.size):
                     if i != key and counter(i, 2) == 0:
                         for possible_value in tuple(empty_j_domain):
-                            if tuple(
-                                possible_value if j == empty_j else this[j]
-                                for j in range(self.size)
-                            ) == getter(i):
+                            if tuple(possible_value if j == empty_j else this[j] for j in range(self.size)) == getter(i):
                                 empty_j_domain.difference_update((possible_value,))
 
         # Número de valores por linha e coluna deve ser ~igual
@@ -185,7 +160,7 @@ class Board:
         ):
             constraint_domain = set((0, 1))
             for value in (0, 1):
-                if this.count(value) >= np.floor(self.size // 2) + max_diff:
+                if this.count(value) >= (self.size // 2) + max_diff:
                     constraint_domain.difference_update((value,))
             for i in range(self.size):
                 if this[i] == 2:
@@ -193,12 +168,7 @@ class Board:
 
         # Guardar a interseção dos domínios novos com os atuais
         self.domains = tuple(
-            tuple(
-                tuple(new_domains.get((i, j)) or ())
-                if (i, j) in new_domains
-                else self.get_domain(i, j)
-                for j in range(self.size)
-            )
+            tuple(tuple(new_domains.get((i, j)) or ()) if (i, j) in new_domains else self.get_domain(i, j) for j in range(self.size))
             for i in range(self.size)
         )
 
