@@ -88,17 +88,13 @@ class Board:
 
         return self.matrix[row]
 
-    def adjacent_vertical_numbers(
-        self, row: int, col: int
-    ) -> Tuple[Optional[int], Optional[int]]:
+    def adjacent_vertical_numbers(self, row: int, col: int) -> Tuple[Optional[int], Optional[int]]:
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
 
         return (self.get_number(row - 1, col), self.get_number(row + 1, col))
 
-    def adjacent_horizontal_numbers(
-        self, row: int, col: int
-    ) -> Tuple[Optional[int], Optional[int]]:
+    def adjacent_horizontal_numbers(self, row: int, col: int) -> Tuple[Optional[int], Optional[int]]:
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
 
@@ -118,11 +114,7 @@ class Board:
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
 
         new_matrix = tuple(
-            tuple(
-                value if (i == row and j == col) else self.matrix[i][j]
-                for j in range(self.size)
-            )
-            for i in range(self.size)
+            tuple(value if (i == row and j == col) else self.matrix[i][j] for j in range(self.size)) for i in range(self.size)
         )
 
         new_board = Board(new_matrix, self.domains, self.size, self.free_squares - 1)
@@ -174,13 +166,7 @@ class Board:
                         empty_j = other.index(2)
                         empty_j_domain = get_new_domain((i, empty_j))
                         for possible_value in tuple(empty_j_domain):
-                            if (
-                                tuple(
-                                    possible_value if j == empty_j else other[j]
-                                    for j in range(self.size)
-                                )
-                                == this
-                            ):
+                            if tuple(possible_value if j == empty_j else other[j] for j in range(self.size)) == this:
                                 empty_j_domain.difference_update((possible_value,))
             elif empty_count == 1:
                 empty_j = this.index(2)
@@ -188,10 +174,7 @@ class Board:
                 for i in range(self.size):
                     if i != key and counter(i, 2) == 0:
                         for possible_value in tuple(empty_j_domain):
-                            if tuple(
-                                possible_value if j == empty_j else this[j]
-                                for j in range(self.size)
-                            ) == getter(i):
+                            if tuple(possible_value if j == empty_j else this[j] for j in range(self.size)) == getter(i):
                                 empty_j_domain.difference_update((possible_value,))
 
         # Número de valores por linha e coluna deve ser ~igual
@@ -210,12 +193,7 @@ class Board:
 
         # Guardar a interseção dos domínios novos com os atuais
         self.domains = tuple(
-            tuple(
-                tuple(new_domains.get((i, j)) or ())
-                if (i, j) in new_domains
-                else self.get_domain(i, j)
-                for j in range(self.size)
-            )
+            tuple(tuple(new_domains.get((i, j)) or ()) if (i, j) in new_domains else self.get_domain(i, j) for j in range(self.size))
             for i in range(self.size)
         )
 
@@ -359,8 +337,55 @@ class Takuzu(Problem):
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
 
-        # TODO
-        return 0
+        # Heurísticas de MRV e LCV para o problema
+
+        if node.action is None:
+            return 0
+
+        heuristics = 0
+
+        state = node.state
+        board = state.board
+
+        # MRV: Escolher a posição do tabuleiro com maior restrições
+        (row, col, value) = node.action
+
+        # Se o domínio for 1 já está restringido pela variável à volta
+        if len(node.state.board.get_domain(row, col)) == 1:
+            heuristics += 1
+
+        # Desempatar com o maior número de domníos que irá restringir
+
+        domain_counter = [0, 0]  # numero de posições livres adjacentes, numero de domínios restringidos
+
+        for i in (-1, 1):
+            if board.get_number(row + i, col) == 2:
+                domain_counter[1] += 1
+            if len(board.get_domain(row + i, col)) == 1:
+                domain_counter[0] += 1
+            if board.get_number(row, col + i) == 2:
+                domain_counter[1] += 1
+            if len(board.get_domain(row, col + i)) == 1:
+                domain_counter[0] += 1
+
+        heuristics += domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0
+
+        # LCV: Escolher a posição do tabuleiro com menor restrições
+
+        # LCV: escolher valor menos restritivo no tabuleiro
+
+        # avaliar o número de dominios sem restrições no tabuleiro
+        domain_counter = [0, 0]  # número de domínios não restritos, número de domínios
+        for row in range(board.size):
+            for col in range(board.size):
+                domain = board.get_domain(row, col)
+                if len(domain) > 0:
+                    domain_counter[1] += 1
+                if len(domain) == 2:
+                    domain_counter[domain[0]] += 1
+
+        heuristics += domain_counter[0] / domain_counter[1]
+        return heuristics
 
 
 if __name__ == "__main__":
@@ -389,7 +414,7 @@ if __name__ == "__main__":
     # exit(1)
 
     # Obter o nó solução usando a procura em profundidade:
-    goal_node = depth_first_tree_search(problem)
+    goal_node = astar_search(problem)
     # Verificar se foi atingida a solução
     if goal_node:
         print(goal_node.state)
