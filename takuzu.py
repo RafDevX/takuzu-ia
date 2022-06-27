@@ -365,7 +365,7 @@ class Takuzu(Problem):
             elif closest_val == value and furthest_val == 2:
                 heuristics += 1
 
-        return (board.size**2 - board.free_squares) * (heuristics)
+        return heuristics
 
 
 if __name__ == "__main__":
