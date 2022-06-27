@@ -88,17 +88,13 @@ class Board:
 
         return self.matrix[row]
 
-    def adjacent_vertical_numbers(
-        self, row: int, col: int
-    ) -> Tuple[Optional[int], Optional[int]]:
+    def adjacent_vertical_numbers(self, row: int, col: int) -> Tuple[Optional[int], Optional[int]]:
         """Devolve os valores imediatamente abaixo e acima,
         respectivamente."""
 
         return (self.get_number(row - 1, col), self.get_number(row + 1, col))
 
-    def adjacent_horizontal_numbers(
-        self, row: int, col: int
-    ) -> Tuple[Optional[int], Optional[int]]:
+    def adjacent_horizontal_numbers(self, row: int, col: int) -> Tuple[Optional[int], Optional[int]]:
         """Devolve os valores imediatamente à esquerda e à direita,
         respectivamente."""
 
@@ -118,10 +114,7 @@ class Board:
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
 
         new_matrix = tuple(
-            tuple(
-                value if (i == row and j == col) else self.matrix[i][j]
-                for j in range(self.size)
-            )
+            tuple(value if (i == row and j == col) else self.matrix[i][j] for j in range(self.size))
             for i in range(self.size)
         )
 
@@ -174,13 +167,7 @@ class Board:
                         empty_j = other.index(2)
                         empty_j_domain = get_new_domain((i, empty_j))
                         for possible_value in tuple(empty_j_domain):
-                            if (
-                                tuple(
-                                    possible_value if j == empty_j else other[j]
-                                    for j in range(self.size)
-                                )
-                                == this
-                            ):
+                            if tuple(possible_value if j == empty_j else other[j] for j in range(self.size)) == this:
                                 empty_j_domain.difference_update((possible_value,))
             elif empty_count == 1:
                 empty_j = this.index(2)
@@ -188,10 +175,7 @@ class Board:
                 for i in range(self.size):
                     if i != key and counter(i, 2) == 0:
                         for possible_value in tuple(empty_j_domain):
-                            if tuple(
-                                possible_value if j == empty_j else this[j]
-                                for j in range(self.size)
-                            ) == getter(i):
+                            if tuple(possible_value if j == empty_j else this[j] for j in range(self.size)) == getter(i):
                                 empty_j_domain.difference_update((possible_value,))
 
         # Número de valores por linha e coluna deve ser ~igual
@@ -211,9 +195,7 @@ class Board:
         # Guardar a interseção dos domínios novos com os atuais
         self.domains = tuple(
             tuple(
-                tuple(new_domains.get((i, j)) or ())
-                if (i, j) in new_domains
-                else self.get_domain(i, j)
+                tuple(new_domains.get((i, j)) or ()) if (i, j) in new_domains else self.get_domain(i, j)
                 for j in range(self.size)
             )
             for i in range(self.size)
