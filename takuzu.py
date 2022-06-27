@@ -152,7 +152,7 @@ class Board:
                             if tuple(possible_value if j == empty_j else this[j] for j in range(self.size)) == getter(i):
                                 empty_j_domain.difference_update((possible_value,))
 
-        # Número de valores por linha e coluna deve ser igual
+        # Número de valores por linha e coluna deve ser ~igual
         max_diff = self.size % 2
         for (this, packer) in (
             (self.get_row(row), lambda other_coord: (row, other_coord)),
