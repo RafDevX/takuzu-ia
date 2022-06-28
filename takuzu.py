@@ -399,7 +399,7 @@ if __name__ == "__main__":
     # exit(1)
 
     # Obter o nó solução usando a procura em profundidade:
-    goal_node = astar_search(problem)
+    goal_node = depth_first_tree_search(problem)
     # Verificar se foi atingida a solução
     if goal_node:
         print(goal_node.state)
