@@ -2,9 +2,10 @@
 # 99311 Rafael Serra e Oliveira
 # 99335 Tiago Vieira da Silva
 
-from sys import stdin
+from sys import argv, stdin
 from typing import Dict, List, Optional, Set, Tuple
 from search import (
+    InstrumentedProblem,
     Problem,
     Node,
     astar_search,
@@ -355,7 +356,7 @@ if __name__ == "__main__":
     # $ python3 takuzu < i1.txt
     board = Board.parse_instance_from_stdin()
     # Criar uma instância de Takuzu:
-    problem = Takuzu(board)
+    problem = InstrumentedProblem(Takuzu(board))
 
     # compare_searchers(
     #     [problem],
@@ -370,9 +371,20 @@ if __name__ == "__main__":
     # exit(1)
 
     # Obter o nó solução usando a procura em profundidade:
-    goal_node = depth_first_tree_search(problem)
+    goal_node = (
+        (
+            {
+                "bfs": breadth_first_tree_search,
+                "dfs": depth_first_tree_search,
+                "greedy": greedy_search,
+                "a_star": astar_search,
+            }
+        )[argv[1]]
+    )(problem)
+    # goal_node = depth_first_tree_search(problem)
     # Verificar se foi atingida a solução
     if goal_node:
         print(goal_node.state)
+        print(problem.succs, problem.states)  # Gerados, Expandidos
     else:
         print("No solution found")
