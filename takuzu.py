@@ -346,33 +346,30 @@ class Takuzu(Problem):
         state = node.state
         board = state.board
 
-        # If there is no possible action, h(n) = inf, but we just return the board size
         if node.action is None:
-            return board.size * board.size
+            return np.inf
 
         heuristics = 0
 
         # MRV: Escolher a posição do tabuleiro com maior restrições
         (row, col, value) = node.action
 
-        # Penalizar domínios de comprimento 2
-        if len(node.state.board.get_domain(row, col)) == 2:
+        # Penalizar domínios de comprimento 1
+        if len(node.state.board.get_domain(row, col)) == 1:
             heuristics += 1
 
         # Desempatar com o maior número de domníos adjacentes que irá restringir
-        domain_counter = [0, 0]  # numero de posições livres adjacentes, numero de domínios restringidos
+        constrained_domains = 0
+        total_free_adj = 0
 
-        for i in (-1, 1):
-            if board.get_number(row + i, col) == 2:
-                domain_counter[1] += 1
-            if len(board.get_domain(row + i, col)) == 1:
-                domain_counter[0] += 1
-            if board.get_number(row, col + i) == 2:
-                domain_counter[1] += 1
-            if len(board.get_domain(row, col + i)) == 1:
-                domain_counter[0] += 1
+        for packer in (lambda delta: (row + delta, col), lambda delta: (row, col + delta)):
+            for delta in (-1, 1):
+                if board.get_number(*packer(delta)) == 2:
+                    total_free_adj += 1
+                    if len(board.get_domain(*packer(delta))) == 1:
+                        constrained_domains += 1
 
-        heuristics += 1 - (domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0)
+        heuristics += 1 - (constrained_domains / total_free_adj if total_free_adj > 0 else 0)
 
         # LCV: Escolher a posição do tabuleiro com menor restrições
 
