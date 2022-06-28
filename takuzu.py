@@ -343,23 +343,23 @@ class Takuzu(Problem):
 
         # Heurísticas de MRV e LCV para o problema
 
-        if node.action is None:
-            return 0
-
-        heuristics = 0
-
         state = node.state
         board = state.board
+
+        # If there is no possible action, h(n) = inf, but we just return the board size
+        if node.action is None:
+            return board.size * board.size
+
+        heuristics = 0
 
         # MRV: Escolher a posição do tabuleiro com maior restrições
         (row, col, value) = node.action
 
-        # Se o domínio for 1 já está restringido pela variável à volta
-        if len(node.state.board.get_domain(row, col)) == 1:
+        # Penalizar domínios de comprimento 2
+        if len(node.state.board.get_domain(row, col)) == 2:
             heuristics += 1
 
-        # Desempatar com o maior número de domníos que irá restringir
-
+        # Desempatar com o maior número de domníos adjacentes que irá restringir
         domain_counter = [0, 0]  # numero de posições livres adjacentes, numero de domínios restringidos
 
         for i in (-1, 1):
@@ -372,7 +372,7 @@ class Takuzu(Problem):
             if len(board.get_domain(row, col + i)) == 1:
                 domain_counter[0] += 1
 
-        heuristics += domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0
+        heuristics += 1 - (domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0)
 
         # LCV: Escolher a posição do tabuleiro com menor restrições
 
@@ -388,8 +388,9 @@ class Takuzu(Problem):
                 if len(domain) == 2:
                     domain_counter[domain[0]] += 1
 
-        heuristics += domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0
-        return heuristics
+        heuristics += 1 - (domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0)
+
+        return board.free_squares * heuristics
 
 
 if __name__ == "__main__":
