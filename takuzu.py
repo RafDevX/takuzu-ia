@@ -114,7 +114,8 @@ class Board:
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
 
         new_matrix = tuple(
-            tuple(value if (i == row and j == col) else self.matrix[i][j] for j in range(self.size)) for i in range(self.size)
+            tuple(value if (i == row and j == col) else self.matrix[i][j] for j in range(self.size))
+            for i in range(self.size)
         )
 
         new_board = Board(new_matrix, self.domains, self.size, self.free_squares - 1)
@@ -193,7 +194,10 @@ class Board:
 
         # Guardar a interseção dos domínios novos com os atuais
         self.domains = tuple(
-            tuple(tuple(new_domains.get((i, j)) or ()) if (i, j) in new_domains else self.get_domain(i, j) for j in range(self.size))
+            tuple(
+                tuple(new_domains.get((i, j)) or ()) if (i, j) in new_domains else self.get_domain(i, j)
+                for j in range(self.size)
+            )
             for i in range(self.size)
         )
 
@@ -404,11 +408,10 @@ if __name__ == "__main__":
     #     [problem],
     #     ["Searcher", "<succs/goal_tests/states/found>"],
     #     [
-    #         astar_search,
-    #         breadth_first_tree_search,
     #         depth_first_tree_search,
+    #         breadth_first_tree_search,
     #         greedy_search,
-    #         recursive_best_first_search,
+    #         astar_search,
     #     ],
     # )
     # exit(1)
