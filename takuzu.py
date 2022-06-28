@@ -12,6 +12,7 @@ from search import (
     depth_first_tree_search,
     greedy_search,
     recursive_best_first_search,
+    compare_searchers,
 )
 
 
@@ -75,6 +76,18 @@ class Board:
 
         return self.matrix[row]
 
+    def adjacent_vertical_numbers(self, row: int, col: int) -> Tuple[Optional[int], Optional[int]]:
+        """Devolve os valores imediatamente abaixo e acima,
+        respectivamente."""
+
+        return (self.get_number(row - 1, col), self.get_number(row + 1, col))
+
+    def adjacent_horizontal_numbers(self, row: int, col: int) -> Tuple[Optional[int], Optional[int]]:
+        """Devolve os valores imediatamente à esquerda e à direita,
+        respectivamente."""
+
+        return (self.get_number(row, col - 1), self.get_number(row, col + 1))
+
     def count_col(self, col: int, num: int) -> int:
         """Devolve o número de num na coluna indicada."""
 
@@ -89,7 +102,8 @@ class Board:
         """Devolve um novo tabuleiro com o valor colocado na posição indicada."""
 
         new_matrix = tuple(
-            tuple(value if (i == row and j == col) else self.matrix[i][j] for j in range(self.size)) for i in range(self.size)
+            tuple(value if (i == row and j == col) else self.matrix[i][j] for j in range(self.size))
+            for i in range(self.size)
         )
 
         new_board = Board(new_matrix, self.domains, self.size, self.free_squares - 1)
@@ -168,7 +182,10 @@ class Board:
 
         # Guardar a interseção dos domínios novos com os atuais
         self.domains = tuple(
-            tuple(tuple(new_domains.get((i, j)) or ()) if (i, j) in new_domains else self.get_domain(i, j) for j in range(self.size))
+            tuple(
+                tuple(new_domains.get((i, j)) or ()) if (i, j) in new_domains else self.get_domain(i, j)
+                for j in range(self.size)
+            )
             for i in range(self.size)
         )
 
@@ -312,8 +329,37 @@ class Takuzu(Problem):
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
 
-        # TODO
-        pass
+        # Heurísticas de MRV e LCV para o problema
+
+        state = node.state
+        board = state.board
+
+        if node.action is None:
+            return np.inf
+
+        heuristics = 0
+
+        # MRV: Escolher a posição do tabuleiro com maior restrições
+        (row, col, value) = node.action
+
+        # Penalizar domínios de comprimento 1
+        if len(node.state.board.get_domain(row, col)) == 1:
+            heuristics += 1
+
+        # Desempatar com o maior número de domníos adjacentes que irá restringir
+        constrained_domains = 0
+        total_free_adj = 0
+
+        for packer in (lambda delta: (row + delta, col), lambda delta: (row, col + delta)):
+            for delta in (-1, 1):
+                if board.get_number(*packer(delta)) == 2:
+                    total_free_adj += 1
+                    if len(board.get_domain(*packer(delta))) == 1:
+                        constrained_domains += 1
+
+        heuristics += 1 - (constrained_domains / total_free_adj if total_free_adj > 0 else 0)
+
+        return board.free_squares * heuristics
 
 
 if __name__ == "__main__":
@@ -327,6 +373,19 @@ if __name__ == "__main__":
     board = Board.parse_instance_from_stdin()
     # Criar uma instância de Takuzu:
     problem = Takuzu(board)
+
+    # compare_searchers(
+    #     [problem],
+    #     ["Searcher", "<succs/goal_tests/states/found>"],
+    #     [
+    #         breadth_first_tree_search,
+    #         depth_first_tree_search,
+    #         greedy_search,
+    #         astar_search,
+    #     ],
+    # )
+    # exit(1)
+
     # Obter o nó solução usando a procura em profundidade:
     goal_node = depth_first_tree_search(problem)
     # Verificar se foi atingida a solução
