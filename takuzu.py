@@ -330,7 +330,7 @@ class Takuzu(Problem):
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
 
-        # Heurísticas de MRV e LCV para o problema
+        # Heurística de MRV para o problema
 
         state = node.state
         board = state.board
@@ -338,14 +338,14 @@ class Takuzu(Problem):
         if node.action is None:
             return np.inf
 
-        heuristics = 0
+        heuristic = 0
 
         # MRV: Escolher a posição do tabuleiro com maior restrições
         (row, col, value) = node.action
 
         # Penalizar domínios de comprimento 1
         if len(node.state.board.get_domain(row, col)) == 1:
-            heuristics += 1
+            heuristic += 1
 
         # Desempatar com o maior número de domníos adjacentes que irá restringir
         constrained_domains = 0
@@ -361,9 +361,9 @@ class Takuzu(Problem):
                     if len(board.get_domain(*packer(delta))) == 1:
                         constrained_domains += 1
 
-        heuristics += 1 - (constrained_domains / total_free_adj if total_free_adj > 0 else 0)
+        heuristic += 1 - (constrained_domains / total_free_adj if total_free_adj > 0 else 0)
 
-        return board.free_squares * heuristics
+        return board.free_squares * heuristic
 
 
 if __name__ == "__main__":
