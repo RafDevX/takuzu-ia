@@ -361,8 +361,8 @@ if __name__ == "__main__":
     #     [problem],
     #     ["Searcher", "<succs/goal_tests/states/found>"],
     #     [
-    #         depth_first_tree_search,
     #         breadth_first_tree_search,
+    #         depth_first_tree_search,
     #         greedy_search,
     #         astar_search,
     #     ],
