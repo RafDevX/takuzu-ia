@@ -52,17 +52,6 @@ class Board:
 
         return f"Board({self.matrix}, {self.domains}, {self.size}, {self.free_squares})"
 
-    def print_pretty_repr(self) -> None:
-        """Devolve uma representação do tabuleiro em formato legível."""
-
-        for i in range(self.size):
-            for j in range(self.size):
-                print(
-                    f"[{self.get_number(i, j)}, {str(self.get_domain(i, j)).ljust(len('(0, 1)'))}]",
-                    end="\t",
-                )
-            print()
-
     def get_number(self, row: int, col: int) -> Optional[int]:
         """Devolve o valor na respetiva posição do tabuleiro, ou None se a posição for inválida."""
 
@@ -166,13 +155,13 @@ class Board:
                     if i != key and counter(i, 2) == 1:
                         other = getter(i)
                         empty_j = other.index(2)
-                        empty_j_domain = get_new_domain((i, empty_j))
+                        empty_j_domain = get_new_domain(packer(i, empty_j))
                         for possible_value in tuple(empty_j_domain):
                             if tuple(possible_value if j == empty_j else other[j] for j in range(self.size)) == this:
                                 empty_j_domain.difference_update((possible_value,))
             elif empty_count == 1:
                 empty_j = this.index(2)
-                empty_j_domain = get_new_domain((key, empty_j))
+                empty_j_domain = get_new_domain(packer(key, empty_j))
                 for i in range(self.size):
                     if i != key and counter(i, 2) == 0:
                         for possible_value in tuple(empty_j_domain):
@@ -187,7 +176,7 @@ class Board:
         ):
             constraint_domain = set((0, 1))
             for value in (0, 1):
-                if this.count(value) >= np.floor(self.size // 2) + max_diff:
+                if this.count(value) >= (self.size // 2) + max_diff:
                     constraint_domain.difference_update((value,))
             for i in range(self.size):
                 if this[i] == 2:
@@ -342,9 +331,40 @@ class Takuzu(Problem):
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
 
-        # TODO
-        return 0
+        # Heurística de MRV para o problema
 
+        state = node.state
+        board = state.board
+
+        if node.action is None:
+            return np.inf
+
+        heuristic = 0
+
+        # MRV: Escolher a posição do tabuleiro com maior restrições
+        (row, col, value) = node.action
+
+        # Penalizar domínios de comprimento 1
+        if len(node.state.board.get_domain(row, col)) == 1:
+            heuristic += 1
+
+        # Desempatar com o maior número de domníos adjacentes que irá restringir
+        constrained_domains = 0
+        total_free_adj = 0
+
+        for packer in (
+            lambda delta: (row + delta, col),
+            lambda delta: (row, col + delta),
+        ):
+            for delta in (-1, 1):
+                if board.get_number(*packer(delta)) == 2:
+                    total_free_adj += 1
+                    if len(board.get_domain(*packer(delta))) == 1:
+                        constrained_domains += 1
+
+        heuristic += 1 - (constrained_domains / total_free_adj if total_free_adj > 0 else 0)
+
+        return board.free_squares * heuristic
 
 if __name__ == "__main__":
     # Ler o ficheiro do standard input,
@@ -354,22 +374,10 @@ if __name__ == "__main__":
 
     # Ler tabuleiro do ficheiro 'i1.txt'(Figura 1):
     # $ python3 takuzu < i1.txt
+
     board = Board.parse_instance_from_stdin()
     # Criar uma instância de Takuzu:
     problem = InstrumentedProblem(Takuzu(board))
-
-    # compare_searchers(
-    #     [problem],
-    #     ["Searcher", "<succs/goal_tests/states/found>"],
-    #     [
-    #         breadth_first_tree_search,
-    #         depth_first_tree_search,
-    #         greedy_search,
-    #         astar_search,
-    #     ],
-    # )
-    # exit(1)
-
     # Obter o nó solução usando a procura em profundidade:
     goal_node = (
         (
