@@ -14,7 +14,6 @@ from search import (
     recursive_best_first_search,
     compare_searchers,
 )
-import numpy as np
 
 
 class Board:
@@ -50,17 +49,6 @@ class Board:
         """Representação interna do tabuleiro."""
 
         return f"Board({self.matrix}, {self.domains}, {self.size}, {self.free_squares})"
-
-    def print_pretty_repr(self) -> None:
-        """Devolve uma representação do tabuleiro em formato legível."""
-
-        for i in range(self.size):
-            for j in range(self.size):
-                print(
-                    f"[{self.get_number(i, j)}, {str(self.get_domain(i, j)).ljust(len('(0, 1)'))}]",
-                    end="\t",
-                )
-            print()
 
     def get_number(self, row: int, col: int) -> Optional[int]:
         """Devolve o valor na respetiva posição do tabuleiro, ou None se a posição for inválida."""
@@ -165,13 +153,13 @@ class Board:
                     if i != key and counter(i, 2) == 1:
                         other = getter(i)
                         empty_j = other.index(2)
-                        empty_j_domain = get_new_domain((i, empty_j))
+                        empty_j_domain = get_new_domain(packer(i, empty_j))
                         for possible_value in tuple(empty_j_domain):
                             if tuple(possible_value if j == empty_j else other[j] for j in range(self.size)) == this:
                                 empty_j_domain.difference_update((possible_value,))
             elif empty_count == 1:
                 empty_j = this.index(2)
-                empty_j_domain = get_new_domain((key, empty_j))
+                empty_j_domain = get_new_domain(packer(key, empty_j))
                 for i in range(self.size):
                     if i != key and counter(i, 2) == 0:
                         for possible_value in tuple(empty_j_domain):
@@ -186,7 +174,7 @@ class Board:
         ):
             constraint_domain = set((0, 1))
             for value in (0, 1):
-                if this.count(value) >= np.floor(self.size // 2) + max_diff:
+                if this.count(value) >= (self.size // 2) + max_diff:
                     constraint_domain.difference_update((value,))
             for i in range(self.size):
                 if this[i] == 2:
