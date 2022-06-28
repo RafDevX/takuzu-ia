@@ -14,6 +14,7 @@ from search import (
     recursive_best_first_search,
     compare_searchers,
 )
+import numpy as np
 
 
 class Board:
@@ -350,7 +351,10 @@ class Takuzu(Problem):
         constrained_domains = 0
         total_free_adj = 0
 
-        for packer in (lambda delta: (row + delta, col), lambda delta: (row, col + delta)):
+        for packer in (
+            lambda delta: (row + delta, col),
+            lambda delta: (row, col + delta),
+        ):
             for delta in (-1, 1):
                 if board.get_number(*packer(delta)) == 2:
                     total_free_adj += 1
@@ -370,21 +374,10 @@ if __name__ == "__main__":
 
     # Ler tabuleiro do ficheiro 'i1.txt'(Figura 1):
     # $ python3 takuzu < i1.txt
+
     board = Board.parse_instance_from_stdin()
     # Criar uma instância de Takuzu:
     problem = Takuzu(board)
-
-    # compare_searchers(
-    #     [problem],
-    #     ["Searcher", "<succs/goal_tests/states/found>"],
-    #     [
-    #         breadth_first_tree_search,
-    #         depth_first_tree_search,
-    #         greedy_search,
-    #         astar_search,
-    #     ],
-    # )
-    # exit(1)
 
     # Obter o nó solução usando a procura em profundidade:
     goal_node = depth_first_tree_search(problem)
