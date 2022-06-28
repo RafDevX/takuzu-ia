@@ -14,6 +14,7 @@ from search import (
     recursive_best_first_search,
     compare_searchers,
 )
+import numpy as np
 
 
 class Board:
@@ -329,7 +330,7 @@ class Takuzu(Problem):
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
 
-        # Heurísticas de MRV e LCV para o problema
+        # Heurística de MRV para o problema
 
         state = node.state
         board = state.board
@@ -337,29 +338,32 @@ class Takuzu(Problem):
         if node.action is None:
             return np.inf
 
-        heuristics = 0
+        heuristic = 0
 
         # MRV: Escolher a posição do tabuleiro com maior restrições
         (row, col, value) = node.action
 
         # Penalizar domínios de comprimento 1
         if len(node.state.board.get_domain(row, col)) == 1:
-            heuristics += 1
+            heuristic += 1
 
         # Desempatar com o maior número de domníos adjacentes que irá restringir
         constrained_domains = 0
         total_free_adj = 0
 
-        for packer in (lambda delta: (row + delta, col), lambda delta: (row, col + delta)):
+        for packer in (
+            lambda delta: (row + delta, col),
+            lambda delta: (row, col + delta),
+        ):
             for delta in (-1, 1):
                 if board.get_number(*packer(delta)) == 2:
                     total_free_adj += 1
                     if len(board.get_domain(*packer(delta))) == 1:
                         constrained_domains += 1
 
-        heuristics += 1 - (constrained_domains / total_free_adj if total_free_adj > 0 else 0)
+        heuristic += 1 - (constrained_domains / total_free_adj if total_free_adj > 0 else 0)
 
-        return board.free_squares * heuristics
+        return board.free_squares * heuristic
 
 
 if __name__ == "__main__":
@@ -370,21 +374,10 @@ if __name__ == "__main__":
 
     # Ler tabuleiro do ficheiro 'i1.txt'(Figura 1):
     # $ python3 takuzu < i1.txt
+
     board = Board.parse_instance_from_stdin()
     # Criar uma instância de Takuzu:
     problem = Takuzu(board)
-
-    # compare_searchers(
-    #     [problem],
-    #     ["Searcher", "<succs/goal_tests/states/found>"],
-    #     [
-    #         breadth_first_tree_search,
-    #         depth_first_tree_search,
-    #         greedy_search,
-    #         astar_search,
-    #     ],
-    # )
-    # exit(1)
 
     # Obter o nó solução usando a procura em profundidade:
     goal_node = depth_first_tree_search(problem)
