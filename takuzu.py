@@ -341,8 +341,37 @@ class Takuzu(Problem):
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
 
-        # TODO
-        return 0
+        # Heurísticas de MRV e LCV para o problema
+
+        state = node.state
+        board = state.board
+
+        if node.action is None:
+            return np.inf
+
+        heuristics = 0
+
+        # MRV: Escolher a posição do tabuleiro com maior restrições
+        (row, col, value) = node.action
+
+        # Penalizar domínios de comprimento 1
+        if len(node.state.board.get_domain(row, col)) == 1:
+            heuristics += 1
+
+        # Desempatar com o maior número de domníos adjacentes que irá restringir
+        constrained_domains = 0
+        total_free_adj = 0
+
+        for packer in (lambda delta: (row + delta, col), lambda delta: (row, col + delta)):
+            for delta in (-1, 1):
+                if board.get_number(*packer(delta)) == 2:
+                    total_free_adj += 1
+                    if len(board.get_domain(*packer(delta))) == 1:
+                        constrained_domains += 1
+
+        heuristics += 1 - (constrained_domains / total_free_adj if total_free_adj > 0 else 0)
+
+        return board.free_squares * heuristics
 
 
 if __name__ == "__main__":
@@ -370,7 +399,7 @@ if __name__ == "__main__":
     # exit(1)
 
     # Obter o nó solução usando a procura em profundidade:
-    goal_node = depth_first_tree_search(problem)
+    goal_node = astar_search(problem)
     # Verificar se foi atingida a solução
     if goal_node:
         print(goal_node.state)
