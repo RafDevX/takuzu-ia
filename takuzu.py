@@ -374,21 +374,28 @@ class Takuzu(Problem):
 
         heuristics += 1 - (domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0)
 
-        # LCV: Escolher a posição do tabuleiro com menor restrições
+        # avaliar o número de dominios sem restrições no tabuleiro
+        domain_counter = [0, 0]  # número de domínios não restritos, número de domínios
 
         # LCV: escolher valor menos restritivo no tabuleiro
 
-        # avaliar o número de dominios sem restrições no tabuleiro
-        domain_counter = [0, 0]  # número de domínios não restritos, número de domínios
-        for row in range(board.size):
-            for col in range(board.size):
-                domain = board.get_domain(row, col)
-                if len(domain) > 0:
-                    domain_counter[1] += 1
-                if len(domain) == 2:
-                    domain_counter[domain[0]] += 1
+        # Vamos penalizar valores que restringem valores adjacentes
+        for (closest, furthest) in (
+            *(((row + delta, col), (row + 2 * delta, col)) for delta in (-1, 1)),
+            *(((row - delta, col), (row + delta, col)) for delta in (-1, 1)),
+            *(((row, col + delta), (row, col + 2 * delta)) for delta in (-1, 1)),
+            *(((row, col - delta), (row, col + delta)) for delta in (-1, 1)),
+        ):
+            closest_val = board.get_number(*closest)
+            furthest_val = board.get_number(*furthest)
+            if closest_val == 2 or furthest_val == 2:
+                domain_counter[1] += 1
+            if closest_val == 2 and furthest_val == value:
+                domain_counter[0] += 1
+            elif closest_val == value and furthest_val == 2:
+                domain_counter[0] += 1
 
-        heuristics += 1 - (domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0)
+        heuristics += domain_counter[0] / domain_counter[1] if domain_counter[1] > 0 else 0
 
         return board.free_squares * heuristics
 
